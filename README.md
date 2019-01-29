@@ -1,7 +1,7 @@
-## ml4ils
+# ml4ils
 
-# Directory Structure
+## Directory Structure
 
-# Dependencies and Instructions for Running Code
+## Dependencies and Instructions for Running Code
 
-# TODO List
+## TODO List
