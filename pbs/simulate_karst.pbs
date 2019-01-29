@@ -1,0 +1,38 @@
+#!/bin/bash
+#PBS -k o
+#PBS -M bkrosenz@indiana.edu
+#PBS -l vmem=32gb,nodes=1:ppn=4,walltime=8:0:0
+#PBS -m abe
+#PBS -N dils-sim
+#PBS -d /N/dc2/projects/bkrosenz/deep_ils/pbs
+
+N=4
+
+source ~/.bash_profile;
+module load gsl gnu-parallel
+
+WORKING_DIR=/N/dc2/projects/bkrosenz/deep_ils
+
+cd $WORKING_DIR;
+pwd;
+
+############## WARNING!! WILL DELETE OLD STUFF ###
+#rm sims/top1/trees/* sims/top1/raxml/* sims/top1/seqs/* || {echo nothing in folders trees/ raxml/ seqs/}
+#rm sims/top2/trees/* sims/top2/raxml/* sims/top2/seqs/* || {echo nothing in folders trees/ raxml/ seqs/}
+
+# takes t0, t1, t_MRCA, and scale params
+# j=5
+# k=6
+# for i in `seq 0.5 0.5 4.5`;
+# do
+#     for l in `seq 1 20`
+#     do
+#         ./code/simulate.sh ${i} ${j} ${k} ${l};
+#     done
+# done
+
+
+echo started at `date`
+#parallel -j $N ./code/simulate/simulate.top1.sh {1} {2} {3} {4} {5} ::: `seq 1.0 0.5 4.5` ::: 5 ::: 6 ::: `seq 4 2 20` ::: raxmlHPC-AVX
+parallel -j $N ./code/simulate/simulate.top2.sh {1} {2} {3} {4} {5} ::: `seq 1.0 0.5 4.5` ::: 5 ::: 6 ::: `seq 4 2 20` ::: raxmlHPC-AVX
+echo finished at `date`

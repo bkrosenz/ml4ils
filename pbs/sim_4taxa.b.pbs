@@ -1,0 +1,54 @@
+#!/bin/bash
+#PBS -k o
+#PBS -M bkrosenz@indiana.edu
+#PBS -l vmem=32gb,nodes=1:ppn=8,walltime=8:0:0
+#PBS -m abe
+#PBS -N indelible-4-reentrant
+#PBS -d /N/dc2/projects/bkrosenz/deep_ils/pbs
+
+source ~/.bash_profile;
+module load gnu-parallel;
+
+cond_sim() {
+    cd $1;
+    if [ ! -f trees.txt ] ; then
+        indelible.carbonate;
+    fi
+    cd ..;
+}
+export -f cond_sim
+
+
+WORKING_DIR=/N/dc2/projects/bkrosenz/deep_ils/sims/simphy/SimPhy4b;
+PROG_DIR=/N/dc2/projects/bkrosenz/deep_ils/code/simulate;
+cd $WORKING_DIR;    
+
+N=10;
+
+pwd;
+date;
+
+#simphy.carbonate -i SimPhy_4taxa.b.conf
+
+
+#parallel -j$N $PROG_DIR/INDELIble_wrapper.preprocess.pl SimPhy4b indelible_aa_multi.txt 123{} 1 ::: `seq 1 $N`
+
+# simulates only if trees.txt not found
+#find . -name control.txt | sed 's/\/control.txt//' | parallel -j$N cond_sim {} ;
+# ALL DONE
+
+date
+
+
+####### infer
+
+find . -maxdepth 1 -type d '!' -exec test -e "{}/dataset_001_TRUE.fastTree-wag" ';' -print |tail -n+2 > phy_to_infer.list
+     
+while read dir; do
+    cd $dir
+    echo $dir;
+    parallel -j$N  FastTree.carbonate -quiet -out {.}.fastTree-jtt {} ::: *.phy;
+    parallel -j$N  FastTree.carbonate -quiet -wag -out {.}.fastTree-wag {} ::: *.phy;
+    parallel -j$N  FastTree.carbonate -quiet -lg -out {.}.fastTree-lg {} ::: *.phy;
+    cd ..;
+done < phy_to_infer.list

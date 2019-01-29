@@ -1,0 +1,97 @@
+
+
+IMPORTANT WARNING: Sequences Ocyropsis_sp_Florida_USA and Ocyropsis_crystallina are exactly identical
+
+
+IMPORTANT WARNING: Sequences Ocyropsis_sp_Florida_USA and Ocyropsis_sp_Bimini_Bahamas are exactly identical
+
+
+IMPORTANT WARNING: Sequences Petrosia_ficiformis and Acropora_digitifera are exactly identical
+
+
+IMPORTANT WARNING: Sequences Petrosia_ficiformis and Latrunculia_apicalis are exactly identical
+
+
+IMPORTANT WARNING: Sequences Petrosia_ficiformis and Periphyla_periphyla are exactly identical
+
+
+IMPORTANT WARNING: Sequences Petrosia_ficiformis and Hormathia_digitata are exactly identical
+
+
+IMPORTANT WARNING: Sequences Petrosia_ficiformis and Ircinia_fasciculata are exactly identical
+
+IMPORTANT WARNING
+Found 7 sequences that are exactly identical to other sequences in the alignment.
+Normally they should be excluded from the analysis.
+
+Just in case you might need it, an alignment file with 
+sequence duplicates removed is printed to file Metazoa_Choano_VT_Subset27.0.phylip.fa.reduced
+
+
+This is RAxML version 8.2.11 released by Alexandros Stamatakis on June 2017.
+
+With greatly appreciated code contributions by:
+Andre Aberer      (HITS)
+Simon Berger      (HITS)
+Alexey Kozlov     (HITS)
+Kassian Kobert    (HITS)
+David Dao         (KIT and HITS)
+Sarah Lutteropp   (KIT and HITS)
+Nick Pattengale   (Sandia)
+Wayne Pfeiffer    (SDSC)
+Akifumi S. Tanabe (NRIFS)
+Charlie Taylor    (UF)
+
+
+Alignment has 147 distinct alignment patterns
+
+Proportion of gaps and completely undetermined characters in this alignment: 13.35%
+
+RAxML rapid hill-climbing mode
+
+Using 1 distinct models/data partitions with joint branch length optimization
+
+
+Executing 1 inferences on the original alignment using 1 distinct randomized MP trees
+
+All free model parameters will be estimated by RAxML
+GAMMA model of rate heterogeneity, ML estimate of alpha-parameter
+
+GAMMA Model parameters will be estimated up to an accuracy of 0.1000000000 Log Likelihood units
+
+Partition: 0
+Alignment Patterns: 147
+Name: No Name Provided
+DataType: AA
+Substitution Matrix: VT
+Using fixed base frequencies
+
+
+
+
+RAxML was called as follows:
+
+raxmlHPC -n Metazoa_Choano_VT_Subset27.0.phylip.fa.rxml -p 12345 -s Metazoa_Choano_VT_Subset27.0.phylip.fa -m PROTGAMMAVT 
+
+
+Partition: 0 with name: No Name Provided
+Base frequencies: 0.077 0.050 0.046 0.054 0.014 0.041 0.063 0.066 0.022 0.059 0.098 0.059 0.022 0.041 0.048 0.071 0.057 0.013 0.032 0.067 
+
+Inference[0]: Time 111.691552 GAMMA-based likelihood -4494.243673, best rearrangement setting 15
+alpha[0]: 0.705191 
+
+
+Conducting final model optimizations on all 1 trees under GAMMA-based models ....
+
+Inference[0] final GAMMA-based Likelihood: -4494.243245 tree written to file /N/dc2/projects/bkrosenz/deep_ils/data/metazoa/whelan2017/metazoa_genes/fasta/RAxML_result.Metazoa_Choano_VT_Subset27.0.phylip.fa.rxml
+
+
+Starting final GAMMA-based thorough Optimization on tree 0 likelihood -4494.243245 .... 
+
+Final GAMMA-based Score of best tree -4494.243237
+
+Program execution info written to /N/dc2/projects/bkrosenz/deep_ils/data/metazoa/whelan2017/metazoa_genes/fasta/RAxML_info.Metazoa_Choano_VT_Subset27.0.phylip.fa.rxml
+Best-scoring ML tree written to: /N/dc2/projects/bkrosenz/deep_ils/data/metazoa/whelan2017/metazoa_genes/fasta/RAxML_bestTree.Metazoa_Choano_VT_Subset27.0.phylip.fa.rxml
+
+Overall execution time: 141.080889 secs or 0.039189 hours or 0.001633 days
+

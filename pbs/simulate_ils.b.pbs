@@ -1,0 +1,40 @@
+#!/bin/bash
+#PBS -k o
+#PBS -M bkrosenz@indiana.edu
+#PBS -l vmem=16gb,nodes=1:ppn=8,walltime=15:0:0
+#PBS -m abe
+#PBS -N ils-b
+#PBS -d /N/dc2/projects/bkrosenz/deep_ils/pbs
+
+N=8
+
+source ~/.bash_profile;
+source activate bio;
+module load gsl gnu-parallel
+
+WORKING_DIR=/N/dc2/projects/bkrosenz/deep_ils
+
+cd $WORKING_DIR/sims;
+pwd;
+
+############## WARNING!! WILL DELETE OLD STUFF ###
+#mkdir ils1  ils2 ils1/inferred_trees ils1/raxml ils1/seqs ils1/trees  ils2/inferred_trees ils2/raxml ils2/seqs ils2/trees
+# rm sims/ils1/trees/* sims/ils1/raxml/* sims/ils1/seqs/* || {echo nothing in folders trees/ raxml/ seqs/}
+# rm sims/ils2/trees/* sims/ils2/raxml/* sims/ils2/seqs/* || {echo nothing in folders trees/ raxml/ seqs/}
+
+# takes t0, t1, t_MRCA, and scale params
+# j=5
+# k=6
+# for i in `seq 0.5 0.5 4.5`;
+# do
+#     for l in `seq 1 20`
+#     do
+#         ./code/simulate.sh ${i} ${j} ${k} ${l};
+#     done
+# done
+
+# here 2nd arg is the ibl
+echo started at `date`
+parallel -j $N $WORKING_DIR/code/simulate/simulate.ils1.sh {1} {2} {3} {4} {5} {6} ::: `seq 52 2 100` ::: `seq 0.01 0.01 0.1` ::: 6 12 ::: 1 ::: raxmlHPC ::: g
+parallel -j $N $WORKING_DIR/code/simulate/simulate.ils2.sh {1} {2} {3} {4} {5} {6} ::: `seq 52 2 100` ::: `seq 0.01 0.01 0.1` ::: 6 12 ::: 1 ::: raxmlHPC ::: g
+echo finished at `date`

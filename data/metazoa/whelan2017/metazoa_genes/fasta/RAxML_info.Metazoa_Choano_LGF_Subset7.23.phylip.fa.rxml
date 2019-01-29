@@ -1,0 +1,79 @@
+
+
+IMPORTANT WARNING: Sequences Hydra_viridissima and Hydra_oligactis are exactly identical
+
+IMPORTANT WARNING
+Found 1 sequence that is exactly identical to other sequences in the alignment.
+Normally they should be excluded from the analysis.
+
+Just in case you might need it, an alignment file with 
+sequence duplicates removed is printed to file Metazoa_Choano_LGF_Subset7.23.phylip.fa.reduced
+
+
+This is RAxML version 8.2.11 released by Alexandros Stamatakis on June 2017.
+
+With greatly appreciated code contributions by:
+Andre Aberer      (HITS)
+Simon Berger      (HITS)
+Alexey Kozlov     (HITS)
+Kassian Kobert    (HITS)
+David Dao         (KIT and HITS)
+Sarah Lutteropp   (KIT and HITS)
+Nick Pattengale   (Sandia)
+Wayne Pfeiffer    (SDSC)
+Akifumi S. Tanabe (NRIFS)
+Charlie Taylor    (UF)
+
+
+Alignment has 239 distinct alignment patterns
+
+Proportion of gaps and completely undetermined characters in this alignment: 18.01%
+
+RAxML rapid hill-climbing mode
+
+Using 1 distinct models/data partitions with joint branch length optimization
+
+
+Executing 1 inferences on the original alignment using 1 distinct randomized MP trees
+
+All free model parameters will be estimated by RAxML
+GAMMA model of rate heterogeneity, ML estimate of alpha-parameter
+
+GAMMA Model parameters will be estimated up to an accuracy of 0.1000000000 Log Likelihood units
+
+Partition: 0
+Alignment Patterns: 239
+Name: No Name Provided
+DataType: AA
+Substitution Matrix: LG
+Using empirical base frequencies
+
+
+
+
+RAxML was called as follows:
+
+raxmlHPC -n Metazoa_Choano_LGF_Subset7.23.phylip.fa.rxml -p 12345 -s Metazoa_Choano_LGF_Subset7.23.phylip.fa -m PROTGAMMALGF 
+
+
+Partition: 0 with name: No Name Provided
+Base frequencies: 0.112 0.056 0.032 0.046 0.037 0.046 0.091 0.053 0.026 0.050 0.127 0.041 0.025 0.031 0.038 0.068 0.033 0.006 0.025 0.057 
+
+Inference[0]: Time 178.417815 GAMMA-based likelihood -10150.541273, best rearrangement setting 5
+alpha[0]: 0.586165 
+
+
+Conducting final model optimizations on all 1 trees under GAMMA-based models ....
+
+Inference[0] final GAMMA-based Likelihood: -10150.540393 tree written to file /N/dc2/projects/bkrosenz/deep_ils/data/metazoa/whelan2017/metazoa_genes/fasta/RAxML_result.Metazoa_Choano_LGF_Subset7.23.phylip.fa.rxml
+
+
+Starting final GAMMA-based thorough Optimization on tree 0 likelihood -10150.540393 .... 
+
+Final GAMMA-based Score of best tree -10150.540393
+
+Program execution info written to /N/dc2/projects/bkrosenz/deep_ils/data/metazoa/whelan2017/metazoa_genes/fasta/RAxML_info.Metazoa_Choano_LGF_Subset7.23.phylip.fa.rxml
+Best-scoring ML tree written to: /N/dc2/projects/bkrosenz/deep_ils/data/metazoa/whelan2017/metazoa_genes/fasta/RAxML_bestTree.Metazoa_Choano_LGF_Subset7.23.phylip.fa.rxml
+
+Overall execution time: 213.542477 secs or 0.059317 hours or 0.002472 days
+

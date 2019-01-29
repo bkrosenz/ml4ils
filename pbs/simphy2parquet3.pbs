@@ -1,0 +1,36 @@
+#!/bin/bash
+#PBS -k o
+#PBS -M bkrosenz@indiana.edu
+#PBS -l vmem=128gb,nodes=1:ppn=12,walltime=2:0:0
+#PBS -m abe
+#PBS -N calc-top
+#PBS -d /N/dc2/projects/bkrosenz/deep_ils/pbs
+
+# real run
+# source ~/.bash_profile;
+# source activate bio3.6;
+
+source activate bio3.6
+
+WORKING_DIR=/N/dc2/projects/bkrosenz/deep_ils/sims/simphy/SimPhy4;
+
+DIRLIST='/N/dc2/projects/bkrosenz/deep_ils/code/preprocess/ft_to_convert.full_list';
+
+M=112e9
+N=12
+# M=10e9
+# N=4
+
+cd /N/dc2/projects/bkrosenz/deep_ils/code/pylib
+pwd;
+
+#find $WORKING_DIR -type d -exec test -e "{}/dataset_001_TRUE.fastTree-jtt" ";"  > finished.fastTree
+#-printf "%f\n" > finished.fastTree # .py script needs full dir path
+
+#python simphy2arrow.py -p $N -m $M --covs --tops \
+python simphy2arrow.py -p $N -m $M --covs \
+       --dirlist $DIRLIST \
+       --outdir /N/dc2/projects/bkrosenz/deep_ils/results/SimPhy4 \
+       --nleaves 5 \
+       --subtrees 3 \
+       --outgroup 0

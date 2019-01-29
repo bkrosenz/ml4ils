@@ -1,0 +1,85 @@
+
+
+IMPORTANT WARNING: Sequences Ocyropsis_crystallina and Callianira_Antarctica are exactly identical
+
+
+IMPORTANT WARNING: Sequences Ocyropsis_crystallina and Mertensiidae_sp_Antarctica are exactly identical
+
+
+IMPORTANT WARNING: Sequences Ocyropsis_crystallina and Hormiphora_californica are exactly identical
+
+IMPORTANT WARNING
+Found 3 sequences that are exactly identical to other sequences in the alignment.
+Normally they should be excluded from the analysis.
+
+Just in case you might need it, an alignment file with 
+sequence duplicates removed is printed to file Metazoa_Choano_LGF_Subset2.31.phylip.fa.reduced
+
+
+This is RAxML version 8.2.11 released by Alexandros Stamatakis on June 2017.
+
+With greatly appreciated code contributions by:
+Andre Aberer      (HITS)
+Simon Berger      (HITS)
+Alexey Kozlov     (HITS)
+Kassian Kobert    (HITS)
+David Dao         (KIT and HITS)
+Sarah Lutteropp   (KIT and HITS)
+Nick Pattengale   (Sandia)
+Wayne Pfeiffer    (SDSC)
+Akifumi S. Tanabe (NRIFS)
+Charlie Taylor    (UF)
+
+
+Alignment has 407 distinct alignment patterns
+
+Proportion of gaps and completely undetermined characters in this alignment: 15.82%
+
+RAxML rapid hill-climbing mode
+
+Using 1 distinct models/data partitions with joint branch length optimization
+
+
+Executing 1 inferences on the original alignment using 1 distinct randomized MP trees
+
+All free model parameters will be estimated by RAxML
+GAMMA model of rate heterogeneity, ML estimate of alpha-parameter
+
+GAMMA Model parameters will be estimated up to an accuracy of 0.1000000000 Log Likelihood units
+
+Partition: 0
+Alignment Patterns: 407
+Name: No Name Provided
+DataType: AA
+Substitution Matrix: LG
+Using empirical base frequencies
+
+
+
+
+RAxML was called as follows:
+
+raxmlHPC -n Metazoa_Choano_LGF_Subset2.31.phylip.fa.rxml -p 12345 -s Metazoa_Choano_LGF_Subset2.31.phylip.fa -m PROTGAMMALGF 
+
+
+Partition: 0 with name: No Name Provided
+Base frequencies: 0.054 0.075 0.026 0.052 0.013 0.045 0.069 0.035 0.024 0.063 0.098 0.088 0.022 0.060 0.050 0.058 0.047 0.008 0.045 0.067 
+
+Inference[0]: Time 135.528233 GAMMA-based likelihood -17714.227429, best rearrangement setting 5
+alpha[0]: 0.720439 
+
+
+Conducting final model optimizations on all 1 trees under GAMMA-based models ....
+
+Inference[0] final GAMMA-based Likelihood: -17714.227429 tree written to file /N/dc2/projects/bkrosenz/deep_ils/data/metazoa/whelan2017/metazoa_genes/fasta/RAxML_result.Metazoa_Choano_LGF_Subset2.31.phylip.fa.rxml
+
+
+Starting final GAMMA-based thorough Optimization on tree 0 likelihood -17714.227429 .... 
+
+Final GAMMA-based Score of best tree -17714.227425
+
+Program execution info written to /N/dc2/projects/bkrosenz/deep_ils/data/metazoa/whelan2017/metazoa_genes/fasta/RAxML_info.Metazoa_Choano_LGF_Subset2.31.phylip.fa.rxml
+Best-scoring ML tree written to: /N/dc2/projects/bkrosenz/deep_ils/data/metazoa/whelan2017/metazoa_genes/fasta/RAxML_bestTree.Metazoa_Choano_LGF_Subset2.31.phylip.fa.rxml
+
+Overall execution time: 190.393269 secs or 0.052887 hours or 0.002204 days
+

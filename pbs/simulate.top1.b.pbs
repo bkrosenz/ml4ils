@@ -1,0 +1,43 @@
+#!/bin/bash
+#PBS -k o
+#PBS -M bkrosenz@indiana.edu
+#PBS -l vmem=16gb,nodes=1:ppn=8,walltime=14:0:0
+#PBS -m abe
+#PBS -N top1.b
+#PBS -d /N/dc2/projects/bkrosenz/deep_ils/pbs
+
+N=8
+
+source ~/.bash_profile;
+source activate bio
+module load gsl gnu-parallel
+
+WORKING_DIR=/N/dc2/projects/bkrosenz/deep_ils
+
+cd $WORKING_DIR;
+pwd;
+
+############## WARNING!! WILL DELETE OLD STUFF ###
+#mkdir top1  top2 top1/inferred_trees top1/raxml top1/seqs top1/trees  top2/inferred_trees top2/raxml top2/seqs top2/trees
+# rm sims/top1/trees/* sims/top1/raxml/* sims/top1/seqs/* || {echo nothing in folders trees/ raxml/ seqs/}
+# rm sims/top2/trees/* sims/top2/raxml/* sims/top2/seqs/* || {echo nothing in folders trees/ raxml/ seqs/}
+
+# takes t0, t1, t_MRCA, and scale params
+# j=5
+# k=6
+# for i in `seq 0.5 0.5 4.5`;
+# do
+#     for l in `seq 1 20`
+#     do
+#         ./code/simulate.sh ${i} ${j} ${k} ${l};
+#     done
+# done
+
+#### arguments: <T_a> <Tb-T_a> <T_c-T_b> <data_dir> <raxml_binary_name> <suffix>                                                                                         ### where T_a = T(a,b), T_b = T((a,b),c), T_c = T(((a,b),c),o)
+
+source ~/.bash_profile
+source activate bio
+
+echo started at `date`
+parallel -j $N ./code/simulate/simulate.top1.final.sh {1} {2} {3} {4} {5} {6} ::: `seq 10 10 70` ::: `seq 0.01 0.01 0.1` 0.2 ::: 20 ::: /N/dc2/projects/bkrosenz/deep_ils/sims/short_sims ::: raxmlHPC ::: a
+echo finished at `date`

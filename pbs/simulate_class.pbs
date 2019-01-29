@@ -1,0 +1,36 @@
+#!/bin/bash
+#PBS -k o
+#PBS -M bkrosenz@indiana.edu
+#PBS -l vmem=128gb,nodes=1:ppn=12,walltime=11:0:0
+#PBS -m abe
+#PBS -N sim-db
+#PBS -d /N/dc2/projects/bkrosenz/deep_ils/pbs
+
+source ~/.bash_profile;
+source activate bio3.6;
+
+WORKING_DIR=/N/dc2/projects/bkrosenz/deep_ils/code;
+cd $WORKING_DIR;
+pwd;
+
+# short run for testing
+# N=4
+# python sim_class.py -s WAG BLOSUM -m PROTCATWAGF  PROTCATBLOSUM62F \
+#        --ebl 20 40 60 \
+#        --ibl .01 .1 .5 1 5 \
+#        --tout  20 \
+#        --length 300 \
+#        --raxml raxmlHPC -o ../databases/sim_db.sql --loci 50 --procs $N #  >/dev/null 2>sim_errors.log
+
+
+N=12
+python sim_class.py -s WAG BLOSUM JTT -m PROTCATWAGF  PROTCATBLOSUM62F PROTCATJTTF \
+       --ebl `seq 20 20 100` \
+       --ibl  .01 .05 .1 .2 .4 .6 1 2 4 6 \
+       --tout 20 \
+       --length 300 \
+       --raxml raxmlHPC -o ../databases/sim_db.sql --loci 5000 --procs $N # >/dev/null 2>../databases/sim_db_errors.log
+
+# `seq .01 .01 .2` `seq .3 .1 10` \
+
+echo finished at `date`

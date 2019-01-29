@@ -1,0 +1,33 @@
+#!/bin/bash
+#PBS -k o
+#PBS -M bkrosenz@indiana.edu
+#PBS -l vmem=32gb,nodes=1:ppn=4,walltime=2:0:0
+#PBS -m abe
+#PBS -N indelible-4
+#PBS -d /N/dc2/projects/bkrosenz/deep_ils/pbs
+
+source ~/.bash_profile;
+module load gnu-parallel;
+
+cond_sim() {
+    if [ ! -f trees.txt ] ; then
+        indelible.carbonate;
+    fi
+}
+export -f cond_sim
+
+
+WORKING_DIR=/N/dc2/projects/bkrosenz/deep_ils/sims/simphy/SimPhy4;
+cd $WORKING_DIR;    
+
+N=8;
+
+# # assume control.txt has been generated
+# #cat unfinished.phylip | parallel -j$N cond_sim {};
+# parallel -j$N cond_sim {} :::: unfinished.phylip;
+# #find -maxdepth 1 -type d | parallel -j$N cond_sim {} ;
+
+find . -name control.txt | sed 's/\/control.txt//' | parallel -P $N 'cd {} && cond_sim ;'
+
+# asume all control.txt written
+# seq -w 01466 05540 | sed 's/\/control.txt//' | parallel -P $N 'cd {} && cond_sim ;'

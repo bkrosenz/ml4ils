@@ -1,0 +1,28 @@
+#!/bin/bash
+#PBS -k o
+#PBS -M bkrosenz@indiana.edu
+#PBS -l vmem=128gb,nodes=1:ppn=12,walltime=5:0:0
+#PBS -m abe
+#PBS -N indelible
+#PBS -d /N/dc2/projects/bkrosenz/deep_ils/pbs
+
+source ~/.bash_profile;
+module load gnu-parallel;
+
+WORKING_DIR=/N/dc2/projects/bkrosenz/deep_ils/data/metazoa/whelan2017/metazoa_genes/fasta;
+
+cd $WORKING_DIR;
+pwd;
+N=12;
+
+date;
+parallel -j$N  'echo {}; raxmlHPC -n {}.rxml -p 12345 -s {} -m PROTGAMMA{= s:Metazoa_Choano_::;s:_Subset.*::; =}' ::: *.fa;
+
+# for fn in ls *phylip;
+# do
+#     model=$(echo $fn | perl -pe 's/Metazoa_Choano_(\w+)_Subset.*/$1/');
+#     echo $model;
+#     raxmlHPC-HYBRID-AVX -T $N  -m PROTGAMMA${model} -p 12345 \
+#                         -s $fn;
+
+date;

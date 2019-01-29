@@ -1,0 +1,33 @@
+#!/bin/bash
+#PBS -k o
+#PBS -M bkrosenz@indiana.edu
+#PBS -l vmem=16gb,nodes=1:ppn=4,walltime=8:0:0
+#PBS -m abe
+#PBS -N dils-sim
+#PBS -d /N/dc2/projects/bkrosenz/deep_ils/pbs
+
+source ~/.bash_profile;
+module load gsl gnu-parallel;
+WORKING_DIR=/N/dc2/projects/bkrosenz/deep_ils/sims/simphy/SimPhy4;
+
+cd $WORKING_DIR;
+pwd;
+
+N=4
+
+find . -maxdepth 1 -type d '!' -exec test -e "{}/dataset_001_TRUE.fastTree-wag" ';' -print |tail -n+2 > phy_to_infer.list
+     
+# find . -name *.phy | parallel -j$N  FastTree.carbonate -quiet -wag -out {.}.fastTree-wag {}
+# find . -name *.phy | parallel -j$N  FastTree.carbonate -quiet -lg -out {.}.fastTree-lg {}
+# find . -name *.phy | parallel -j$N  FastTree.carbonate -quiet -out {.}.fastTree-jtt {}
+
+# # done up to 69
+# for dir in `seq -w 1712 $nsims`
+while read dir; do
+    cd $dir
+    echo $dir;
+    parallel -j$N  FastTree.carbonate -quiet -out {.}.fastTree-jtt {} ::: *.phy;
+    parallel -j$N  FastTree.carbonate -quiet -wag -out {.}.fastTree-wag {} ::: *.phy;
+    parallel -j$N  FastTree.carbonate -quiet -lg -out {.}.fastTree-lg {} ::: *.phy;
+    cd ..;
+done < phy_to_infer.list
