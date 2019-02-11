@@ -40,6 +40,7 @@ def train_and_test(X,
                    learners,
                    metrics,
                    outfile,
+                   outdir,
                    nfolds=10,
                    nprocs=1,
                    predict=False):
@@ -98,7 +99,7 @@ def train_and_test(X,
         clf = clone(learner)
         clf.fit(X,y)
         
-        dump(clf,path.join(args.outdir,'models',learner_name+'.pkl.gz')) # pickle it
+        dump(clf,path.join(outdir,'models',learner_name+'.pkl.gz')) # pickle it
         
         ftrs = u.get_features(clf)
         if ftrs is not None:
@@ -232,18 +233,18 @@ def main(args):
             if 'features' in args:
                 x_attrs = [a for a in x_attrs if a in args.features]
                 X=X[:, [x_attr2ind[a] for a in x_attrs]]
-            print('keep',keep.shape,'ycount_attrs',ycount_attrs)
+            print('keep',keep.shape,'ycount_attrs',ycount_attrs.shape)
             y = y[keep,:] # drop all features
 
             n = len(y)
             sp_tree_ind = np.repeat(1,n) # TODO: dont hardcode
             
-            print(n,'y',y.shape,sp_tree_ind.shape,'sp trees',' '.join(y_attrs[ycount_attrs[i]] for i in sp_tree_ind))
+#            print(n,'y',y.shape,sp_tree_ind.shape,'sp trees',' '.join(y_attrs[ycount_attrs[i]] for i in sp_tree_ind))
 
             y_frac = y[range(n), sp_tree_ind] / np.sum(y,1)
             
-            np.save('Xtrain', X)
-            np.save('ytrain', y_frac)
+            np.save(path.join(args.outdir,'Xtrain'), X)
+            np.save(path.join(args.outdir,'ytrain'), y_frac)
             # classification
             
             if args.balanced:
@@ -259,28 +260,30 @@ def main(args):
             else:
                 X_bin = X
                 y_bin = y_frac < args.ils # ils = 1, no_ils = 0
-            np.save('Xbin',X_bin)
-            np.save('ybin',y_bin)
+            np.save(path.join(args.outdir,'Xbin'), X_bin)
+            np.save(path.join(args.outdir,'ybin'), y_bin)
             
-            print('classifiers....\n')
+            print('\nclassifiers....\n')
             results_c = train_and_test(X_bin,
                                        y_bin,
                                        classification_learners,
                                        c_metrics,
                                        outfile=path.join(outdir,
                                                          'results.%s.classify'%alg),
+                                       outdir=outdir,
                                        nfolds=args.folds,
                                        nprocs=args.procs,
                                        predict=True)
             
             # compute results
-            print('regressors....\n')
+            print('\nregressors....\n')
             results_r = train_and_test(X,
                                        y_frac,
                                        regression_learners,
                                        r_metrics,
                                        outfile=path.join(outdir,
                                                          'results.%s.regress'%alg),
+                                       outdir=outdir,
                                        nfolds=args.folds,
                                        nprocs=args.procs,
                                        predict=True)
@@ -310,7 +313,7 @@ if __name__=="__main__":
     parser.add_argument('--tol',
                         default=.3,
                         help='observed frequencies must be within tol of each other')
-    parser.add_argument('--ils',
+    parser.add_argument('--ils', 
                         default=.8,
                         type=float,
                         help='species tree frequency must be at most this value to be considered ils.')

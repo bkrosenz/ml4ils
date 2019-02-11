@@ -325,7 +325,6 @@ class HDF5Store(object):
         self.chunk_len=chunk_len
         self.dtypes = dtypes
         self.noNans = nan_to_num
-        print('\nattrib',attributes)
         attribute_list = (np.array(a, dtype='S20') for a in attributes[1])  # utf8
             
         if not path.isfile(datapath):
@@ -402,9 +401,9 @@ def multidict_to_df(user_dict,names=('ix1','ix2')):
     """convert dict-of-dicts or dict-of-lists to multilevel dataframe. 
     2nd arg is the 2 names of the index variables."""
     keys = list(user_dict.keys())
-    print('type(user_dict[next(iter(user_dict))])','\nkey\n',
-          keys,'type',user_dict[keys[0]],
-          type(user_dict[keys[0]]))
+    # print('type(user_dict[next(iter(user_dict))])','\nkey\n',
+    #       keys,'type',user_dict[keys[0]],
+    #       type(user_dict[keys[0]]))
     try:
         if type(user_dict[keys[0]]) == list: # dict of lists
             df = pd.DataFrame.from_dict({(i,j): user_dict[i][j] 

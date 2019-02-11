@@ -72,6 +72,7 @@ def default_counter(keys,counts):
     return [counts[k] if k in counts else 0 for k in keys]
         
 def process_df_helper(df, xcols, ycols, xtop_col=None, ytop_col=None, topnames=None, flatten=True):
+    """Return (*summaries_of_xcols,*xtops),(*summaries_of_ycols,*ytops)"""
 #    print (df.columns)
     x = np.empty((len(utils.summaries), len(xcols)))
     utils.summarize_into(df[xcols], x)
@@ -80,8 +81,8 @@ def process_df_helper(df, xcols, ycols, xtop_col=None, ytop_col=None, topnames=N
     if flatten:
         x, y=x.flatten(), y.flatten()
         if xtop_col is not None and ytop_col is not None and topnames is not None:
-            xtops=default_counter(topnames,Counter(df[xtop_col])) #dict.fromkeys(topnames).update(Counter(df[xtop_col]) #df[xtop_col].value_counts().values.flatten()
-            ytops=default_counter(topnames,Counter(df[ytop_col]))
+            xtops=default_counter(topnames, Counter(df[xtop_col])) #dict.fromkeys(topnames).update(Counter(df[xtop_col]) #df[xtop_col].value_counts().values.flatten()
+            ytops=default_counter(topnames, Counter(df[ytop_col]))
             return ( np.concatenate((x,xtops)), np.concatenate((y,ytops)) )
     return (x,y)
 
@@ -115,18 +116,21 @@ def main(args):
     cov_cols = next(tree_config.cov_iter(range(1,tree_config.subtree_sizes[0]+1)))
     numeric_cols = cov_cols + ['vmr','length']
     true_numeric_cols = ['g_'+c for c in numeric_cols] 
+
+    stree_cols =['ebl','ibl','s_length']
     sp_tree = '(4,(3,(1,2)));' # todo : dont hardcode
     
     tops = list( tree_config.nw_iter() ) # note: MUST SORT, ow will not match order of pd.Series.value_counts
 
     summary_strs = lambda pref: [pref+'_'+summary for summary in utils.summaries]
 
-    summaries = reduce(add,map(summary_strs,cov_cols)) + summary_strs('vmr') + summary_strs('length')
+    summaries = reduce(add,map(summary_strs,numeric_cols))
     
     #colnames for hdf output
     xcols = summaries + tops
+
     ycols = ['g_'+s for s in summaries] + \
-            reduce(add, map(summary_strs, ('ebl','ibl','s_length'))) + \
+            reduce(add, map(summary_strs, stree_cols) ) + \
             ['g_'+s for s in tops] + \
              ['sp_tree_ind', 'concordant']
     print( 'xc',xcols,'yc',ycols)
@@ -158,7 +162,6 @@ def main(args):
             gtops=gtops.loc[keep_idx]
             itops=itops.loc[keep_idx]
 
-            stree_cols =['s_1:2','s_1:3','s_length']
             # q = session.query(*stree_cols)
             # s_stats = pd.read_sql(
             #     q.statement, q.session.bind, index_col='sid'
@@ -181,12 +184,8 @@ def main(args):
             x,y = zip(*chain.from_iterable(summaries)) # assume summaries is list of lists
             x=np.array(x)
 
-#            print([yy.shape for yy in y],x.shape,x[0].shape)
-#            exit()
             y=np.vstack(y)
             print('x',x.shape,'y',y.shape)
-
-            #            x = np.hstack( [x,itops]  )
 
             # todo: modify for splits
 
@@ -229,7 +228,7 @@ def main(args):
 
 if __name__=="__main__":
     
-    parser = argparse.ArgumentParser(description='Process some integers.')
+    parser = argparse.ArgumentParser(description='get summary stats for classification/regression')
 
     parser.add_argument('--procs',
                         '-p',
@@ -244,10 +243,9 @@ if __name__=="__main__":
     parser.add_argument('--verbose',action='store_true',help='debug')
     parser.add_argument('--overwrite',action='store_true',help='overwrite')
     parser.add_argument('--threads','-t',type=int,help='num threads per proc',default=4)
-    parser.add_argument('--mem','-m',type=float,help='memory (in bytes)',default=4e9)
     parser.add_argument('--tol', default=.3,
                         help='''observed frequencies must be within "tol" of each other
-                        to be considered ils''')
+                        to be considered discordant''')
     
     #TODO: make these 2 into a mutually exclusive required group
     parser.add_argument('--outdir',
