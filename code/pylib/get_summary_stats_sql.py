@@ -14,7 +14,8 @@ from itertools import chain,islice
 import matplotlib.pyplot as plt
 from collections import defaultdict,Counter
 from io import StringIO
-from functools import partial
+from functools import partial,reduce
+from operator import add
 import argparse,re,gc,pickle
 from ete3 import Tree
 from scipy.sparse import csr_matrix, triu
@@ -36,7 +37,8 @@ import pandas as pd
 pd.options.mode.chained_assignment = None
 import dask.array as da
 import dask.dataframe as dd
-    
+from sqlalchemy.orm import load_only
+
 dask.config.config
 
 def get_topo_freqs(session, table, col):
@@ -70,6 +72,7 @@ def default_counter(keys,counts):
     return [counts[k] if k in counts else 0 for k in keys]
         
 def process_df_helper(df, xcols, ycols, xtop_col=None, ytop_col=None, topnames=None, flatten=True):
+#    print (df.columns)
     x = np.empty((len(utils.summaries), len(xcols)))
     utils.summarize_into(df[xcols], x)
     y = np.empty((len(utils.summaries), len(ycols)))
@@ -107,26 +110,31 @@ def main(args):
               
     #### start processing
     algnames =  [a1+'_'+a2 for a1, a2 in utils.combr(('wag','lg'),2)]
-#    algnames =  ('lg',)
     
-
+    # col names for sql db
+    cov_cols = next(tree_config.cov_iter(range(1,tree_config.subtree_sizes[0]+1)))
+    numeric_cols = cov_cols + ['vmr','length']
+    true_numeric_cols = ['g_'+c for c in numeric_cols] 
+    sp_tree = '(4,(3,(1,2)));' # todo : dont hardcode
     
     tops = list( tree_config.nw_iter() ) # note: MUST SORT, ow will not match order of pd.Series.value_counts
-    vmrs = ['vmr_' +summary for summary in utils.summaries]
-    lengths = ['length_' +summary for summary in utils.summaries]
-    summaries = [
-        pair+'_'+summary
-        for summary in utils.summaries
-        for pair in next(tree_config.cov_iter(range(1,tree_config.subtree_sizes[0]+1)))
-    ]
+
+    summary_strs = lambda pref: [pref+'_'+summary for summary in utils.summaries]
+
+    summaries = reduce(add,map(summary_strs,cov_cols)) + summary_strs('vmr') + summary_strs('length')
     
-    xcols = summaries + vmrs + lengths + tops
-    ycols = ['g_'+s for s in xcols] + ['sp_tree_ind', 'concordant'] #+ summaries + vmrs + lengths
+    #colnames for hdf output
+    xcols = summaries + tops
+    ycols = ['g_'+s for s in summaries] + \
+            reduce(add, map(summary_strs, ('ebl','ibl','s_length'))) + \
+            ['g_'+s for s in tops] + \
+             ['sp_tree_ind', 'concordant']
+    print( 'xc',xcols,'yc',ycols)
 
     outpath=path.join(args.outdir,args.outfile)    
     hdf5_store = make_hdf5_file(outpath,algnames,xcols,ycols,args.overwrite)
     
-    print( xcols,ycols,'hdf5 shapes:',hdf5_store.shapes,tree_config.subtree_sizes, hdf5_store.dtypes)
+    print('hdf5 shapes:',hdf5_store.shapes,tree_config.subtree_sizes, hdf5_store.dtypes)
 
     engine = create_engine('postgresql://bkrosenz@localhost/sim4') #sqlite:///%s'%args.out)
     metadata = MetaData(bind=engine)
@@ -146,20 +154,21 @@ def main(args):
 
             #TODO: this only ignores @ level of strees . should we ignore @ lev of subsamples?
             keep_idx = itops.index[(cmax-cmin)/csum < args.tol] # TODO: ignore polytomies
-            cov_cols = next(tree_config.cov_iter(range(1,tree_config.subtree_sizes[0]+1)))
-            numeric_cols = cov_cols + ['vmr','length']
-            true_numeric_cols = ['g_'+c for c in numeric_cols]
-        
-            sp_tree = '(4,(3,(1,2)));' # todo : dont hardcode
                         
             gtops=gtops.loc[keep_idx]
             itops=itops.loc[keep_idx]
 
+            stree_cols =['s_1:2','s_1:3','s_length']
+            # q = session.query(*stree_cols)
+            # s_stats = pd.read_sql(
+            #     q.statement, q.session.bind, index_col='sid'
+            # ).loc[keep_idx].distinct('sid').values
+            # print(s_stats.shape,s_stats)
             # get other stats
             summaries = Parallel(n_jobs=args.procs)(
                 delayed( process_df )( pd.read_sql(q.statement,q.session.bind),
                                        xcols=numeric_cols,
-                                       ycols=true_numeric_cols,
+                                       ycols=true_numeric_cols+stree_cols,
                                        xtop_col='itop',
                                        ytop_col='gtop',
                                        topnames=tops,
@@ -172,7 +181,7 @@ def main(args):
             x,y = zip(*chain.from_iterable(summaries)) # assume summaries is list of lists
             x=np.array(x)
 
-            print([yy.shape for yy in y],x.shape,x[0].shape)
+#            print([yy.shape for yy in y],x.shape,x[0].shape)
 #            exit()
             y=np.vstack(y)
             print('x',x.shape,'y',y.shape)
@@ -187,14 +196,14 @@ def main(args):
             xcol_dict = dict((k,v) for v,k in enumerate(xcols))
             top_idx = [xcol_dict[k] for k in tops]
             concordant = y[:,top_idx].argmax(1)==st_ind
-            print ('\nconc',y[:,top_idx],concordant.shape)
+#            print ('\nconc',y[:,top_idx],concordant.shape)
             n_strees=len(concordant)
             n_samples,n_features = x.shape
             sp_tree_ind = np.empty( (n_samples, 1) )
-            sp_tree_ind.fill(2)
+            sp_tree_ind.fill(tops.index(sp_tree))
 
             y = np.hstack( [ y, sp_tree_ind, np.reshape(concordant, (-1,1)) ]  )
-
+            print('yshape',y.shape)
             hdf5_store.extend(x,'/%s/x'%alg)
             hdf5_store.extend(y,'/%s/y'%alg)        
             del x,y
@@ -204,12 +213,12 @@ def main(args):
             pickle.dump(summaries,open('res.pkl','wb'))
             itops.to_pickle('itops.gz')
 #            print('x',x,'itop',itops)
-            print('xcols',xcols,'\nycols\n',ycols)
+#            print('xcols',xcols,'\nycols\n',ycols)
             print('conc',concordant.values.shape,
                   'shapes:',
                   [ s.shape
                     for s in [y, itops, sp_tree_ind, np.reshape(concordant.values,(-1,1))] ],
-                  'x',x.shape,x,
+                  'x',x.shape,
             )
 
             raise e

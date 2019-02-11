@@ -368,7 +368,7 @@ class HDF5Store(object):
                 dset[last:(last+n)] = vals
                 h5f.flush()
         except Exception as e:
-            print('value lens',[len(v) for v in value_list],
+            print(#'value lens',[len(v) for v in value_list],
                                 self.shapes,self.datasets,
                                 'shape',shape,dataset,'value len',n, (-1,*shape)
             )
@@ -439,3 +439,18 @@ def idem(f, x, *args, **kwargs):
         return f(x, *args, **kwargs)
     except:
         return x
+
+#### descriptive stats
+
+def read_trees(tree_file, outgroup='4'):
+    with open(tree_file,'r') as f:
+        trees=[Tree(s) for s in f if s.endswith(';\n')]
+        for t in trees:
+            t.set_outgroup(outgroup)
+    return trees
+
+def get_tree_dist(gtrees, itrees):
+    comps = (t1.compare(t2) for t1,t2 in zip(gtrees,itrees))
+    return np.mean(
+        np.array([s['rf'] for s in comps])!=0
+    )

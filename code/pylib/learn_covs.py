@@ -6,7 +6,7 @@ from sklearn.linear_model import ElasticNetCV, LogisticRegressionCV
 from sklearn.svm import SVC
 from sklearn.dummy import DummyClassifier,DummyRegressor
 from sklearn import metrics as met
-from sklearn.model_selection import cross_validate,StratifiedKFold
+from sklearn.model_selection import cross_validate,StratifiedKFold,cross_val_predict
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.feature_selection import SelectFromModel
@@ -23,6 +23,7 @@ import pandas as pd
 import numpy as np
 import h5py
 from joblib import dump, load, Parallel, delayed
+import json
 
 import pandas as pd
 pd.options.mode.chained_assignment = None
@@ -40,11 +41,14 @@ def train_and_test(X,
                    metrics,
                    outfile,
                    nfolds=10,
-                   nprocs=1):
+                   nprocs=1,
+                   predict=False):
     """main loop"""
     results = dict.fromkeys( learners )
     feature_weights = { l : [] for l in learners }
 
+    if predict:
+        preds = dict.fromkeys( learners )
     with open(outfile+'.txt','w') as f:
         npos=sum(y)
         f.write('npos (ILS): %d, nneg %d, nfolds: %d\n' %(npos,len(y)-npos,nfolds))
@@ -58,26 +62,31 @@ def train_and_test(X,
 
             clf = make_pipeline(StandardScaler(),
                                 learner) #SelectFromModel(learner,threshold='mean'))
-            print('CV: ',learner_name,y,learner)
+#            print('CV: ',learner_name,y,learner)
             results[learner_name] = cross_validate(clf,
                                                    X,
                                                    y,
                                                    scoring = metrics,
                                                    cv = nfolds, # Kfold or StratifiedKFold depending on type of learner
-                                                   n_jobs = nprocs,
-                                                   return_estimator=True)
+                                                   return_train_score=True,
+                                                   n_jobs = nprocs)
 
-            
+            if predict:
+                preds[learner_name] = cross_val_predict(clf,
+                                          X,
+                                          y,
+                                          cv = nfolds, # Kfold or StratifiedKFold depending on type of learner
+                                          n_jobs = nprocs)
             for k,v in results[learner_name].items():
                 f.write('%s\t%f\t%f\t'%(k,np.mean(v),np.std(v)))
 
-    print(results)
-    #    exit()
     df = u.multidict_to_df(
         results,
         names = ['learners','metrics']
     )
-    df.to_csv(outfile+'.csv')
+    df.to_csv(outfile+'.csv.gz',compression='gzip')
+    if predict:
+        pd.DataFrame(preds).to_csv(outfile+'.preds.csv.gz',compression='gzip')
 
     # weights trained on WHOLE dataset
     d = {
@@ -88,8 +97,8 @@ def train_and_test(X,
     for learner_name, learner in learners.items():
         clf = clone(learner)
         clf.fit(X,y)
-
-        dump(clf,path.join(args.outdir,learner_name+'.joblib')) # pickle it
+        
+        dump(clf,path.join(args.outdir,'models',learner_name+'.pkl.gz')) # pickle it
         
         ftrs = u.get_features(clf)
         if ftrs is not None:
@@ -100,6 +109,7 @@ def train_and_test(X,
     feature_weights.to_csv(outfile+'.features.csv')
 
 def main(args):
+    dump(args,path.join(args.outdir,'config.pkl.gz'))
 
     # use for both class and regress
     decision_tree_params = {
@@ -110,7 +120,8 @@ def main(args):
     classification_learners = {
         'Random':DummyClassifier('stratified'),
         'Trivial':DummyClassifier('most_frequent'),
-        'RBF-SVM':SVC(kernel='rbf'),
+        'RBF-SVM':SVC(kernel='rbf',
+                      gamma='auto'),
         'RF':RandomForestClassifier(bootstrap=True,
                                     n_estimators=20,
                                     **decision_tree_params),
@@ -184,35 +195,51 @@ def main(args):
     }
     for m in r_metrics: r_metrics[m] = met.make_scorer(r_metrics[m])
 
-    algnames =  [a1+'_'+a2 for a1, a2 in u.combr(('wag','lg'),2)]
-    #    algnames =  ('jtt','wag','lg')
+    with h5py.File(args.data, mode='r',libver='latest') as h5f:
+        algnames = list(h5f.keys())
+
+    print('running algs',algnames)
+    
     for alg in algnames:
         try:
             outdir = path.join(args.outdir,alg)
-            if not path.exists(outdir): mkdir(outdir)            
-        
+            if not path.exists(outdir): mkdir(outdir)
+            modeldir=path.join(outdir,'models')
+            if not path.exists(modeldir): mkdir(modeldir)            
+
             with h5py.File(args.data, mode='r',libver='latest') as h5f:
                 ds = h5f[alg]
-                X=np.nan_to_num( ds['x'] ) # TODO: fix this in the dataset itself
                 
-                y_attrs = ds['y'].attrs['column_names']
-                d=dict((k,v) for v,k in enumerate(y_attrs))
-                print(d)
-                print([d[k] for k in d if b';' in k ] ) # tops only
+                y_attrs = ds['y'].attrs['column_names'].astype(str)
+                y_attr2ind = dict((k,v) for v,k in enumerate(y_attrs))
+                x_attrs = ds['x'].attrs['column_names'].astype(str)
+                x_attr2ind = dict((k,v) for v,k in enumerate(x_attrs))
 
-                # todo: pass arbitrary restrictions to the program
-#                short_trees = np._nan_to_num( ds['y'][:,y_attrs==b'g_length_median']<150 ) 
-                y=np.nan_to_num( ds['y'][:, [d[k] for k in d if b';' in k] ] ) # tops only
+                ycount_attrs = [y_attr2ind[k] for k in y_attr2ind if ';' in k]
+                y=np.nan_to_num( ds['y'][:,ycount_attrs] ) # tops only
+
+                keep = y.sum(1)>args.mintrees #np.logical_and( y.sum(1)>args.mintrees, short_trees )
+                if 'conditions' in args: # dict of the form: 'conditions':{'feature_name':'>2',...}
+                    for attr,cond in args.conditions.items():
+                        code = compile("ds['y'][:,{}]{}".format(y_attr2ind[attr],cond),'','eval')
+                        print('setting',attr,cond,keep.shape,eval(code).shape)
+                        keep = np.logical_and(keep,eval(code))
+
+                X=np.nan_to_num( ds['x'][keep,:] ) # TODO: fix this in the dataset itself
                 
-            keep = y.sum(1)>args.mintrees #np.logical_and( y.sum(1)>args.mintrees, short_trees )
-            y = y[keep,:]
-            X = X[keep,:]
+            # TODO: dont assume max is the sp tree
+            #                sp_tree_ind = np.ndarray.astype(ds['y'][keep, d['sp_tree_ind']], np.int)
+            if 'features' in args:
+                x_attrs = [a for a in x_attrs if a in args.features]
+                X=X[:, [x_attr2ind[a] for a in x_attrs]]
+            print('keep',keep.shape,'ycount_attrs',ycount_attrs)
+            y = y[keep,:] # drop all features
+
+            n = len(y)
+            sp_tree_ind = np.repeat(1,n) # TODO: dont hardcode
             
-            n = y.shape[0]
-            
-            # dont assume max is the sp tree
-            sp_tree_ind = np.ndarray.astype(ds['y'][keep, d[b'sp_tree_ind']], np.int)
-            print(n,'y',y.shape,sp_tree_ind.shape,'attribs',d,sp_tree_ind)
+            print(n,'y',y.shape,sp_tree_ind.shape,'sp trees',' '.join(y_attrs[ycount_attrs[i]] for i in sp_tree_ind))
+
             y_frac = y[range(n), sp_tree_ind] / np.sum(y,1)
             
             np.save('Xtrain', X)
@@ -232,7 +259,6 @@ def main(args):
             else:
                 X_bin = X
                 y_bin = y_frac < args.ils # ils = 1, no_ils = 0
-            print(X_bin.shape,y_bin.shape)
             np.save('Xbin',X_bin)
             np.save('ybin',y_bin)
             
@@ -244,7 +270,8 @@ def main(args):
                                        outfile=path.join(outdir,
                                                          'results.%s.classify'%alg),
                                        nfolds=args.folds,
-                                       nprocs=args.procs)
+                                       nprocs=args.procs,
+                                       predict=True)
             
             # compute results
             print('regressors....\n')
@@ -255,7 +282,8 @@ def main(args):
                                        outfile=path.join(outdir,
                                                          'results.%s.regress'%alg),
                                        nfolds=args.folds,
-                                       nprocs=args.procs)
+                                       nprocs=args.procs,
+                                       predict=True)
         except  Exception as e:
             raise e
             continue
@@ -292,6 +320,9 @@ if __name__=="__main__":
     parser.add_argument('--data',
                         '-i',
                         help='input hdf5 file')
+    parser.add_argument('--config',
+                        '-c',
+                        help='input json config file.  All flags will overwrite command line args.')
     parser.add_argument('--folds',
                         '-f',
                         type=int,
@@ -299,6 +330,11 @@ if __name__=="__main__":
                         default=10)
 
     args = parser.parse_args()
+    if args.config:
+        arg_dict = vars(args)
+        config = json.load(open(args.config))
+        for k in config:
+            arg_dict[k] = config[k]
     print( 'Arguments: ',args)
     main(args)
     

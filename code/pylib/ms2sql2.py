@@ -169,8 +169,12 @@ if __name__=="__main__":
     print ('path',itree_path)
     
     params = dict(
-        zip( param_names,
-             (args.sim, args.simengine, args.infer, args.infengine, args.seqtype, args.seqlength) )
+        zip( param_names, (args.sim,
+                           args.simengine,
+                           args.infer,
+                           args.infengine,
+                           args.seqtype,
+                           args.seqlength) )
     )
     
     conn.execute(
