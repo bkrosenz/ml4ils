@@ -1,0 +1,5 @@
+{"features": ["1:1_mean", "1:1_std", "1:1_min", "1:1_max", "1:1_median", "1:2_mean", "1:2_std", "1:2_min", "1:2_max", "1:2_median", "1:3_mean", "1:3_std", "1:3_min", "1:3_max", "1:3_median", "1:4_mean", "1:4_std", "1:4_min", "1:4_max", "1:4_median", "2:2_mean", "2:2_std", "2:2_min", "2:2_max", "2:2_median", "2:3_mean", "2:3_std", "2:3_min", "2:3_max", "2:3_median", "2:4_mean", "2:4_std", "2:4_min", "2:4_max", "2:4_median", "3:3_mean", "3:3_std", "3:3_min", "3:3_max", "3:3_median", "3:4_mean", "3:4_std", "3:4_min", "3:4_max", "3:4_median", "4:4_mean", "4:4_std", "4:4_min", "4:4_max", "4:4_median", "vmr_mean", "vmr_std", "vmr_min", "vmr_max", "vmr_median", "length_mean", "length_std", "length_min", "length_max", "length_median", "(4,(1,(2,3)));", "(4,(3,(1,2)));", "(4,(2,(1,3)));"],
+  "folds":10,
+ "balanced":true,
+ "data": "/N/dc2/projects/bkrosenz/deep_ils/results/ms1000aa-n500.hdf5"
+}
