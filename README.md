@@ -6,6 +6,12 @@ simulation parameters and summary statistics: https://docs.google.com/spreadshee
 
 ## Directory Structure
 
+### Training Data
+All simulations (parameters, gene trees, inferred trees) are stored in a PostGreSQL database.  The summary statististics for the subsets of the database used for training/testing are found in data/simulated/.
+
+### Results
+Dataset configuration, model parameters, raw predictions, and performance graphs are in the results/ directory.
+
 ## Dependencies and Instructions for Running Code
 
 Python 3.6+.  Required python packages are listed in the code/conda-env.yml file.
