@@ -6,6 +6,11 @@ simulation parameters and summary statistics: https://docs.google.com/spreadshee
 
 ## Directory Structure
 
+### Code
+All simulation scripts are in code/simulate.  ML training and plotting are in code/pylib. 
+
+Miscellaneous scripts for running the pipeline are in code/shell_scripts/ and pbs/ (NOTE: these contain numerous hard-coded paths and IU HPC-specific programs.)
+
 ### Training Data
 All simulations (parameters, gene trees, inferred trees) are stored in a PostGreSQL database.  The summary statististics for the subsets of the database used for training/testing are found in data/simulated/.
 

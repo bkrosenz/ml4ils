@@ -1,0 +1,28 @@
+#!/bin/bash
+#PBS -k o
+#PBS -M bkrosenz@indiana.edu
+#PBS -l vmem=32gb,nodes=1:ppn=8,walltime=4:0:0
+#PBS -m abe
+#PBS -N cupdate
+#PBS -d /N/dc2/projects/bkrosenz/deep_ils/pbs
+
+N=8
+
+source ~/.bash_profile;
+module load anaconda gsl gnu-parallel
+
+source activate bio3.6
+
+
+WORKING_DIR=/N/dc2/projects/bkrosenz/deep_ils/code/pylib
+
+cd $WORKING_DIR;
+pwd;
+
+for resdir in `find /N/dc2/projects/bkrosenz/deep_ils/results/ms_learned -name 'theta*' -type d`;
+do
+    bash test_learn_config.sh $resdir $N;
+    echo finished $resdir...;
+    bash plot_all.sh $N;
+    echo finished plotting  $resdir...;
+done

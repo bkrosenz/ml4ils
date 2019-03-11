@@ -1,0 +1,58 @@
+npos (ILS): 36, nneg 36, nfolds: 10
+metric	mean	std
+
+----
+Random
+
+params:	{'constant': None, 'random_state': None, 'strategy': 'stratified'}
+fit_time	0.003792	0.000581	score_time	0.010731	0.004783	test_Acc	0.587500	0.170222	train_Acc	0.472254	0.049680	test_F1	0.466429	0.177583	train_F1	0.511722	0.033332	test_Prec	0.648333	0.201997	train_Prec	0.488276	0.073432	test_Recall	0.541667	0.274494	train_Recall	0.518371	0.082834	test_MCC	-0.183333	0.380006	train_MCC	-0.068611	0.124200	
+----
+Trivial
+
+params:	{'constant': None, 'random_state': None, 'strategy': 'most_frequent'}
+fit_time	0.004487	0.001730	score_time	0.010383	0.002359	test_Acc	0.500000	0.000000	train_Acc	0.500000	0.000000	test_F1	0.000000	0.000000	train_F1	0.000000	0.000000	test_Prec	0.000000	0.000000	train_Prec	0.000000	0.000000	test_Recall	0.000000	0.000000	train_Recall	0.000000	0.000000	test_MCC	0.000000	0.000000	train_MCC	0.000000	0.000000	
+----
+RBF-SVM
+
+params:	{'C': 1.0, 'cache_size': 200, 'class_weight': None, 'coef0': 0.0, 'decision_function_shape': 'ovr', 'degree': 3, 'gamma': 'auto', 'kernel': 'rbf', 'max_iter': -1, 'probability': False, 'random_state': None, 'shrinking': True, 'tol': 0.001, 'verbose': False}
+fit_time	0.004197	0.000995	score_time	0.008943	0.001788	test_Acc	0.633333	0.080795	train_Acc	0.638826	0.008541	test_F1	0.734242	0.042979	train_F1	0.734689	0.004605	test_Prec	0.581905	0.053740	train_Prec	0.580660	0.005749	test_Recall	1.000000	0.000000	train_Recall	1.000000	0.000000	test_MCC	0.356099	0.192363	train_MCC	0.401388	0.014377	
+----
+RF
+
+params:	{'bootstrap': True, 'class_weight': None, 'criterion': 'gini', 'max_depth': 3, 'max_features': 'auto', 'max_leaf_nodes': None, 'min_impurity_decrease': 0.0, 'min_impurity_split': None, 'min_samples_leaf': 1, 'min_samples_split': 2, 'min_weight_fraction_leaf': 0.0, 'n_estimators': 20, 'n_jobs': None, 'oob_score': False, 'random_state': None, 'verbose': 0, 'warm_start': False}
+fit_time	0.023174	0.005089	score_time	0.017964	0.002398	test_Acc	0.470833	0.202459	train_Acc	0.879830	0.028797	test_F1	0.486349	0.232362	train_F1	0.887548	0.026594	test_Prec	0.450000	0.206290	train_Prec	0.836226	0.037404	test_Recall	0.541667	0.291667	train_Recall	0.947727	0.041372	test_MCC	-0.048118	0.440222	train_MCC	0.768907	0.056721	
+----
+ExtraTrees
+
+params:	{'bootstrap': True, 'class_weight': None, 'criterion': 'gini', 'max_depth': 3, 'max_features': 'auto', 'max_leaf_nodes': None, 'min_impurity_decrease': 0.0, 'min_impurity_split': None, 'min_samples_leaf': 1, 'min_samples_split': 2, 'min_weight_fraction_leaf': 0.0, 'n_estimators': 20, 'n_jobs': None, 'oob_score': False, 'random_state': None, 'verbose': 0, 'warm_start': False}
+fit_time	0.022800	0.004696	score_time	0.018794	0.002583	test_Acc	0.583333	0.089365	train_Acc	0.721970	0.036363	test_F1	0.636537	0.133666	train_F1	0.767976	0.024431	test_Prec	0.553810	0.058245	train_Prec	0.662624	0.037431	test_Recall	0.791667	0.247908	train_Recall	0.919413	0.062691	test_MCC	0.210794	0.223275	train_MCC	0.490895	0.060855	
+----
+AdaBoost
+
+params:	{'algorithm': 'SAMME.R', 'base_estimator__class_weight': None, 'base_estimator__criterion': 'gini', 'base_estimator__max_depth': 3, 'base_estimator__max_features': None, 'base_estimator__max_leaf_nodes': None, 'base_estimator__min_impurity_decrease': 0.0, 'base_estimator__min_impurity_split': None, 'base_estimator__min_samples_leaf': 1, 'base_estimator__min_samples_split': 2, 'base_estimator__min_weight_fraction_leaf': 0.0, 'base_estimator__presort': False, 'base_estimator__random_state': None, 'base_estimator__splitter': 'best', 'base_estimator': DecisionTreeClassifier(class_weight=None, criterion='gini', max_depth=3,
+            max_features=None, max_leaf_nodes=None,
+            min_impurity_decrease=0.0, min_impurity_split=None,
+            min_samples_leaf=1, min_samples_split=2,
+            min_weight_fraction_leaf=0.0, presort=False, random_state=None,
+            splitter='best'), 'learning_rate': 1.0, 'n_estimators': 20, 'random_state': None}
+fit_time	0.038737	0.007329	score_time	0.020332	0.001980	test_Acc	0.533333	0.167498	train_Acc	0.975331	0.007491	test_F1	0.520476	0.172986	train_F1	0.975423	0.007412	test_Prec	0.575000	0.229401	train_Prec	0.972805	0.015987	test_Recall	0.525000	0.226844	train_Recall	0.978409	0.014140	test_MCC	0.078446	0.377067	train_MCC	0.951033	0.015058	
+----
+GradBoost
+
+params:	{'criterion': 'friedman_mse', 'init': None, 'learning_rate': 0.1, 'loss': 'deviance', 'max_depth': 3, 'max_features': None, 'max_leaf_nodes': None, 'min_impurity_decrease': 0.0, 'min_impurity_split': None, 'min_samples_leaf': 1, 'min_samples_split': 2, 'min_weight_fraction_leaf': 0.0, 'n_estimators': 20, 'n_iter_no_change': None, 'presort': 'auto', 'random_state': None, 'subsample': 1.0, 'tol': 0.0001, 'validation_fraction': 0.1, 'verbose': 0, 'warm_start': False}
+fit_time	0.020180	0.004089	score_time	0.010110	0.001495	test_Acc	0.495833	0.102825	train_Acc	0.973816	0.009687	test_F1	0.473254	0.117937	train_F1	0.974352	0.009475	test_Prec	0.505000	0.090692	train_Prec	0.955694	0.014192	test_Recall	0.475000	0.170986	train_Recall	0.993939	0.012121	test_MCC	-0.020541	0.226373	train_MCC	0.948585	0.019148	
+----
+GP
+
+params:	{'copy_X_train': False, 'kernel': None, 'max_iter_predict': 100, 'multi_class': 'one_vs_rest', 'n_jobs': None, 'n_restarts_optimizer': 0, 'optimizer': 'fmin_l_bfgs_b', 'random_state': None, 'warm_start': False}
+fit_time	0.009203	0.001985	score_time	0.010182	0.002103	test_Acc	0.608333	0.186525	train_Acc	0.725426	0.023119	test_F1	0.559048	0.264894	train_F1	0.735051	0.021378	test_Prec	0.575000	0.264706	train_Prec	0.711776	0.030309	test_Recall	0.575000	0.325854	train_Recall	0.762311	0.041195	test_MCC	0.230476	0.413914	train_MCC	0.453640	0.044669	
+----
+LogisticReg
+
+params:	{'Cs': 10, 'class_weight': 'balanced', 'cv': 10, 'dual': False, 'fit_intercept': True, 'intercept_scaling': 1.0, 'max_iter': 300, 'multi_class': 'warn', 'n_jobs': None, 'penalty': 'l1', 'random_state': None, 'refit': True, 'scoring': None, 'solver': 'liblinear', 'tol': 0.0001, 'verbose': 0}
+fit_time	8.040844	1.646747	score_time	0.006777	0.000299	test_Acc	0.541667	0.126381	train_Acc	0.649905	0.050447	test_F1	0.611111	0.140699	train_F1	0.710497	0.037024	test_Prec	0.520000	0.095685	train_Prec	0.611322	0.055601	test_Recall	0.758333	0.234076	train_Recall	0.857860	0.078638	test_MCC	0.113844	0.291234	train_MCC	0.340667	0.096670	
+----
+MLP
+
+params:	{'activation': 'relu', 'alpha': 0.0001, 'batch_size': 50, 'beta_1': 0.9, 'beta_2': 0.999, 'early_stopping': False, 'epsilon': 1e-08, 'hidden_layer_sizes': (10, 10, 10), 'learning_rate': 'adaptive', 'learning_rate_init': 0.01, 'max_iter': 600, 'momentum': 0.9, 'n_iter_no_change': 10, 'nesterovs_momentum': True, 'power_t': 0.5, 'random_state': None, 'shuffle': True, 'solver': 'sgd', 'tol': 0.0001, 'validation_fraction': 0.1, 'verbose': False, 'warm_start': False}
+fit_time	0.350182	0.088836	score_time	0.007040	0.000657	test_Acc	0.562500	0.202630	train_Acc	0.707102	0.039588	test_F1	0.510952	0.295530	train_F1	0.699559	0.051002	test_Prec	0.511667	0.302402	train_Prec	0.718886	0.050493	test_Recall	0.541667	0.346109	train_Recall	0.688542	0.082622	test_MCC	0.129902	0.448222	train_MCC	0.418073	0.078714	
