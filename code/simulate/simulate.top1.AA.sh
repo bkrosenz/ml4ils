@@ -8,7 +8,7 @@ CODEDIR=/N/dc2/projects/bkrosenz/deep_ils/code
 nreps=5000 # simulate a lot, then subsample
 nsamps=1
 seqlen=1000
-scale=1
+
 
 ta=$1 #1.0
 ibl=$2
@@ -17,11 +17,11 @@ tc=`echo print $tb+$3 | perl`
 
 DATADIR=$4
 raxml_binary=$5
-sim_model=$6
-infer_model=$7
+scale=$6 # if generated with ms, theta
+
 echo simulating with t_ab=$ta, t_abc=$tb, t_abco=$tc, 
 echo using raxml: $raxml_binary
-
+echo using scale: $scale
 total_samps=$((1+3*$nsamps))
 
 prefix=t_${ta}_${tb}_${tc}
@@ -65,13 +65,13 @@ do
                         -p 12345
 
             # concatenate all the trees
-            cat $DATADIR/raxml/RAxML_bestTree.${simPrefix}*$infer_model.raxml > $DATADIR/inferred_trees/$inferPrefix.raxml.trees
+            cat $DATADIR/raxml/RAxML_bestTree.${simPrefix}*$infer_model.raxml > $DATADIR/inferred_trees/$inferPrefix.raxml.trees && rm $DATADIR/raxml/RAxML*.${simPrefix}*$infer_model.raxml
         done;
         # remove raxml tmp files
-        rm $DATADIR/raxml/RAxML*.${simPrefix}*.raxml
+#        
         # remove seq files
         tar czf  $DATADIR/seqs/$simPrefix.tar.gz $DATADIR/seqs/$simPrefix*
-        rm $DATADIR/seqs/$simPrefix*
+#        rm $DATADIR/seqs/$simPrefix*
     fi
     echo done...
 done

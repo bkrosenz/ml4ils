@@ -4,6 +4,7 @@ from sqlalchemy.sql.expression import func
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.schema import PrimaryKeyConstraint,UniqueConstraint
+
 import subprocess, sqlite3, argparse, sys, re, shutil
 from operator import mul
 from math import ceil
@@ -44,8 +45,10 @@ if __name__=="__main__":
                         help='sim model')
     parser.add_argument('--seqtype',type=str,
                         help='dna or protein')
-    parser.add_argument('--seqlength',type=str,
+    parser.add_argument('--seqlength',type=int,
                         help='simulator (seqgen/indelible')
+    parser.add_argument('--theta',type=float,
+                        help='scaled mutation rate used in simulation')
     parser.add_argument('--simengine',type=str,
                         help='simulator (seqgen/indelible')
     parser.add_argument('--infengine',type=str,
@@ -63,7 +66,7 @@ if __name__=="__main__":
 
     print(args)
 
-    m = re.compile('t_(.*).trees')
+    m = re.compile('t_(.*).rooted.trees')
 
     args.outgroup = 4
     leafnames = range(1,5)
@@ -78,7 +81,7 @@ if __name__=="__main__":
     
     cov_labels = next(tree_config.cov_iter(range(1,tree_config.subtree_sizes[0]+1)))
     field_names = cov_labels + ['vmr','length']
-    param_names = ['sim_model','sim_engine','infer_model','infer_engine','seq_type','seq_length']
+    param_names = ['sim_model','sim_engine','infer_model','infer_engine','seq_type','seq_length','theta']
     itree_constraints = ['true','inf']+param_names
     get_fields = lambda: [Column(fn,Float) for fn in field_names] + [Column('topology',String)]
 
@@ -121,7 +124,8 @@ if __name__=="__main__":
                             Column('infer_model',String),
                             Column('infer_engine',String),
                             Column('seq_type',String),
-                            Column('seq_length',String),
+                            Column('theta',Float),
+                            Column('seq_length',Integer),
                             PrimaryKeyConstraint(*itree_constraints, name='it_uix')
         )
 
@@ -134,7 +138,7 @@ if __name__=="__main__":
         generated_table = metadata.tables['generated']
     
    
-    gtree_files = glob(path.join(args.indir,'trees/*.trees'))
+    gtree_files = glob(path.join(args.indir,'trees/*.rooted.trees'))
                        
     join_times = [
         [float(f) for f in m.findall(s)[0].split('_')]
@@ -153,7 +157,7 @@ if __name__=="__main__":
     )
     st_covs = [ summarize(t) for t in trees ]
     itree_path = path.join(
-            args.indir,'inferred_trees/*{sim}_{inf}*.trees'.format(
+            args.indir,'inferred_trees/*{sim}_{inf}*.rooted.trees'.format(
                 sim = args.sim,
                 inf = args.infer
             )
@@ -174,8 +178,9 @@ if __name__=="__main__":
                            args.infer,
                            args.infengine,
                            args.seqtype,
-                           args.seqlength) )
-    )
+                           args.seqlength,
+                           args.theta) )
+    ) # TODO: just use namespace -> dict conversion
     
     conn.execute(
         insert(stree_table).values(st_covs).on_conflict_do_nothing(
@@ -189,6 +194,8 @@ if __name__=="__main__":
             itree_values = [ summarize(tree_config.make_tree(tree)) for tree in f.readlines() if '(' in tree ]
         with open(s) as f:
             gtree_values = [ summarize(tree_config.make_tree(tree)) for tree in f.readlines() if '(' in tree ]
+        if not itree_values or not gtree_values: # empty files
+            continue
         for statement in [
             insert(gtree_table).values(
                 gtree_values

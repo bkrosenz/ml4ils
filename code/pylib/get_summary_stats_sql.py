@@ -56,7 +56,7 @@ def process_df(df, xcols, ycols, xtop_col, ytop_col, topnames, flatten=True, spl
     res = []
     if split_size is None or split_size <= 1:
         split_size = len(df)
-    for i in range(len(df)//split_size):
+    for i in range(len(df)//split_size): #TODO: if df doesn't divide evenly, discard leftovers or use a final smaller dataset?
         res.append(
             process_df_helper( df.iloc[i*split_size:((i+1)*split_size)],
                                xcols,
@@ -72,14 +72,15 @@ def default_counter(keys,counts):
     return [counts[k] if k in counts else 0 for k in keys]
         
 def process_df_helper(df, xcols, ycols, xtop_col=None, ytop_col=None, topnames=None, flatten=True):
-    """Return (*summaries_of_xcols,*xtops),(*summaries_of_ycols,*ytops)"""
+    """Arguments: dataframe of a single set of gene trees, list of x and y cols.
+    Returns: (*summaries_of_xcols,*xtops),(*summaries_of_ycols,*ytops)"""
 #    print (df.columns)
     x = np.empty((len(utils.summaries), len(xcols)))
     utils.summarize_into(df[xcols], x)
     y = np.empty((len(utils.summaries), len(ycols)))
     utils.summarize_into(df[ycols], y)
     if flatten:
-        x, y=x.flatten(), y.flatten()
+        x, y=x.flatten('F'), y.flatten('F') # default is row-major
         if xtop_col is not None and ytop_col is not None and topnames is not None:
             xtops=default_counter(topnames, Counter(df[xtop_col])) #dict.fromkeys(topnames).update(Counter(df[xtop_col]) #df[xtop_col].value_counts().values.flatten()
             ytops=default_counter(topnames, Counter(df[ytop_col]))

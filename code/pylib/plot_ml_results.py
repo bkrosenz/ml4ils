@@ -8,13 +8,17 @@ from sys import argv
 from os import path
 plt.ion()
 
+
+# filename to newick:
+#rx=re.compile(r"t_(\d+)_([\d\.]+)_([\d\.]+)")
+
 # import matplotlib
 # matplotlib.interactive(True)
 
 filepath=len(argv)>1 and argv[1] or '/Users/ben/deep_ils/results/results.classify.csv'
 
 try:
-    df = pd.read_csv(filepath, index_col = (0,1))
+    df = pd.read_csv(filepath, index_col = (0,1)) # TODO: fix 'UnicodeDecodeError: 'utf-8' codec can't decode byte 0x89 in position 0: invalid start byte' error
 except:
     print('syntax: python plot_ml_results.py <results_file.csv>')
     raise

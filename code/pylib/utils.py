@@ -62,7 +62,7 @@ def summarize_into(x,res):
         res[0,i] = np.nanmean(x[:,i])
         res[1,i] = np.nanstd(x[:,i])
         res[2,i] = np.nanmin(x[:,i])
-        res[3,i] = np.nanmin(x[:,i])
+        res[3,i] = np.nanmax(x[:,i])
         res[4,i] = np.nanmedian(x[:,i])
         
         
