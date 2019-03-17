@@ -1,31 +1,31 @@
-npos (ILS): 376, nneg 163, nfolds: 10
+npos (ILS): 555, nneg 282, nfolds: 10
 metric	mean	std
 
 ----
 Mean
 
 params:	{'constant': None, 'quantile': None, 'strategy': 'mean'}
-fit_time	0.004340	0.000923	score_time	0.004028	0.000809	test_MSE	0.063051	0.005408	train_MSE	0.062365	0.000572	test_MAE	0.238954	0.011905	train_MAE	0.237655	0.001527	test_EV	0.000000	0.000000	train_EV	0.000000	0.000000	
+fit_time	0.008983	0.006142	score_time	0.004536	0.000696	test_MSE	0.065845	0.003966	train_MSE	0.065639	0.000438	test_MAE	0.240573	0.008782	train_MAE	0.240127	0.001379	test_EV	0.000000	0.000000	train_EV	0.000000	0.000000	
 ----
 Median
 
 params:	{'constant': None, 'quantile': None, 'strategy': 'median'}
-fit_time	0.003665	0.000229	score_time	0.003361	0.000168	test_MSE	0.078158	0.017084	train_MSE	0.077330	0.001167	test_MAE	0.231583	0.029587	train_MAE	0.230037	0.003276	test_EV	0.000000	0.000000	train_EV	0.000000	0.000000	
+fit_time	0.004822	0.001171	score_time	0.004177	0.000935	test_MSE	0.079742	0.010153	train_MSE	0.079502	0.000721	test_MAE	0.223826	0.020006	train_MAE	0.223252	0.002230	test_EV	0.000000	0.000000	train_EV	0.000000	0.000000	
 ----
 RF
 
 params:	{'bootstrap': True, 'criterion': 'mse', 'max_depth': 3, 'max_features': 'auto', 'max_leaf_nodes': None, 'min_impurity_decrease': 0.0, 'min_impurity_split': None, 'min_samples_leaf': 1, 'min_samples_split': 2, 'min_weight_fraction_leaf': 0.0, 'n_estimators': 40, 'n_jobs': None, 'oob_score': False, 'random_state': None, 'verbose': 0, 'warm_start': False}
-fit_time	0.091233	0.005403	score_time	0.009905	0.000303	test_MSE	0.050938	0.007429	train_MSE	0.044953	0.001821	test_MAE	0.199139	0.014108	train_MAE	0.185612	0.005830	test_EV	0.202077	0.052420	train_EV	0.279512	0.025198	
+fit_time	0.125898	0.018345	score_time	0.009655	0.000623	test_MSE	0.047544	0.004036	train_MSE	0.042279	0.000843	test_MAE	0.189539	0.009473	train_MAE	0.178081	0.001847	test_EV	0.274485	0.059902	train_EV	0.355919	0.013227	
 ----
 ExtraTrees
 
 params:	{'bootstrap': True, 'criterion': 'mse', 'max_depth': 3, 'max_features': 'auto', 'max_leaf_nodes': None, 'min_impurity_decrease': 0.0, 'min_impurity_split': None, 'min_samples_leaf': 1, 'min_samples_split': 2, 'min_weight_fraction_leaf': 0.0, 'n_estimators': 40, 'n_jobs': None, 'oob_score': False, 'random_state': None, 'verbose': 0, 'warm_start': False}
-fit_time	0.033845	0.007899	score_time	0.009856	0.001346	test_MSE	0.051519	0.007161	train_MSE	0.048458	0.001079	test_MAE	0.205865	0.015100	train_MAE	0.199181	0.003583	test_EV	0.184420	0.054957	train_EV	0.223092	0.012588	
+fit_time	0.041909	0.009636	score_time	0.010653	0.001518	test_MSE	0.050638	0.003483	train_MSE	0.047827	0.000866	test_MAE	0.199463	0.007942	train_MAE	0.193756	0.002193	test_EV	0.227447	0.056973	train_EV	0.271375	0.012553	
 ----
 GradBoost
 
 params:	{'alpha': 0.9, 'criterion': 'friedman_mse', 'init': None, 'learning_rate': 0.1, 'loss': 'ls', 'max_depth': 3, 'max_features': None, 'max_leaf_nodes': None, 'min_impurity_decrease': 0.0, 'min_impurity_split': None, 'min_samples_leaf': 1, 'min_samples_split': 2, 'min_weight_fraction_leaf': 0.0, 'n_estimators': 40, 'n_iter_no_change': None, 'presort': 'auto', 'random_state': None, 'subsample': 1.0, 'tol': 0.0001, 'validation_fraction': 0.1, 'verbose': 0, 'warm_start': False}
-fit_time	0.046650	0.000598	score_time	0.003729	0.000098	test_MSE	0.043667	0.010386	train_MSE	0.027939	0.001146	test_MAE	0.176804	0.021476	train_MAE	0.142157	0.003889	test_EV	0.319105	0.106853	train_EV	0.552028	0.017272	
+fit_time	0.078098	0.015498	score_time	0.003992	0.000318	test_MSE	0.036287	0.004846	train_MSE	0.025766	0.000990	test_MAE	0.160830	0.011716	train_MAE	0.136015	0.002971	test_EV	0.446956	0.068575	train_EV	0.607428	0.015607	
 ----
 AdaBoost
 
@@ -34,24 +34,24 @@ params:	{'base_estimator__criterion': 'mse', 'base_estimator__max_depth': 3, 'ba
            min_impurity_split=None, min_samples_leaf=1,
            min_samples_split=2, min_weight_fraction_leaf=0.0,
            presort=False, random_state=None, splitter='best'), 'learning_rate': 1.0, 'loss': 'linear', 'n_estimators': 40, 'random_state': None}
-fit_time	0.044072	0.025057	score_time	0.005820	0.001265	test_MSE	0.057658	0.008366	train_MSE	0.049498	0.002613	test_MAE	0.215872	0.016150	train_MAE	0.199079	0.013050	test_EV	0.085558	0.122320	train_EV	0.207914	0.038000	
+fit_time	0.053161	0.022370	score_time	0.005445	0.000969	test_MSE	0.051366	0.002822	train_MSE	0.048326	0.002316	test_MAE	0.207128	0.010975	train_MAE	0.200479	0.008371	test_EV	0.222296	0.029792	train_EV	0.267617	0.035497	
 ----
 GP
 
 params:	{'alpha': 1e-10, 'copy_X_train': False, 'kernel': None, 'n_restarts_optimizer': 0, 'normalize_y': False, 'optimizer': 'fmin_l_bfgs_b', 'random_state': None}
-fit_time	0.028008	0.006831	score_time	0.006163	0.001002	test_MSE	1.743827	2.467049	train_MSE	0.000000	0.000000	test_MAE	0.480008	0.154412	train_MAE	0.000002	0.000000	test_EV	-28.851586	44.054746	train_EV	1.000000	0.000000	
+fit_time	0.060164	0.012339	score_time	0.008697	0.000822	test_MSE	1.195300	2.400325	train_MSE	0.000000	0.000000	test_MAE	0.300988	0.108232	train_MAE	0.000000	0.000000	test_EV	-17.210660	36.425244	train_EV	1.000000	0.000000	
 ----
 ElasticNet
 
 params:	{'alphas': None, 'copy_X': True, 'cv': 10, 'eps': 0.001, 'fit_intercept': True, 'l1_ratio': 0.5, 'max_iter': 1000, 'n_alphas': 100, 'n_jobs': None, 'normalize': False, 'positive': False, 'precompute': 'auto', 'random_state': None, 'selection': 'cyclic', 'tol': 0.0001, 'verbose': 0}
-fit_time	0.489089	0.025612	score_time	0.003501	0.000306	test_MSE	0.060516	0.008457	train_MSE	0.057978	0.001852	test_MAE	0.227618	0.016619	train_MAE	0.222511	0.007105	test_EV	0.040301	0.069140	train_EV	0.070397	0.026712	
+fit_time	0.464404	0.044152	score_time	0.003630	0.000723	test_MSE	0.065845	0.003966	train_MSE	0.065639	0.000438	test_MAE	0.240573	0.008782	train_MAE	0.240127	0.001379	test_EV	0.000000	0.000000	train_EV	0.000000	0.000000	
 ----
 MLP
 
 params:	{'activation': 'relu', 'alpha': 0.0001, 'batch_size': 50, 'beta_1': 0.9, 'beta_2': 0.999, 'early_stopping': False, 'epsilon': 1e-08, 'hidden_layer_sizes': (10, 10, 10), 'learning_rate': 'adaptive', 'learning_rate_init': 0.01, 'max_iter': 1000, 'momentum': 0.9, 'n_iter_no_change': 10, 'nesterovs_momentum': True, 'power_t': 0.5, 'random_state': None, 'shuffle': True, 'solver': 'sgd', 'tol': 0.0001, 'validation_fraction': 0.1, 'verbose': False, 'warm_start': False}
-fit_time	0.484881	0.101347	score_time	0.003571	0.000267	test_MSE	0.054830	0.009330	train_MSE	0.051744	0.003139	test_MAE	0.210918	0.019940	train_MAE	0.204344	0.009633	test_EV	0.135740	0.082272	train_EV	0.170289	0.050166	
+fit_time	0.953378	0.214144	score_time	0.003765	0.000409	test_MSE	0.051305	0.007091	train_MSE	0.046963	0.004916	test_MAE	0.193112	0.018790	train_MAE	0.184864	0.013597	test_EV	0.216880	0.102507	train_EV	0.284260	0.077562	
 ----
 MLP_big
 
 params:	{'activation': 'relu', 'alpha': 0.0001, 'batch_size': 50, 'beta_1': 0.9, 'beta_2': 0.999, 'early_stopping': False, 'epsilon': 1e-08, 'hidden_layer_sizes': (20, 20, 20, 20), 'learning_rate': 'adaptive', 'learning_rate_init': 0.01, 'max_iter': 1000, 'momentum': 0.9, 'n_iter_no_change': 10, 'nesterovs_momentum': True, 'power_t': 0.5, 'random_state': None, 'shuffle': True, 'solver': 'sgd', 'tol': 0.0001, 'validation_fraction': 0.1, 'verbose': False, 'warm_start': False}
-fit_time	0.811023	0.175982	score_time	0.003811	0.000260	test_MSE	0.050308	0.011739	train_MSE	0.046156	0.003400	test_MAE	0.194274	0.026533	train_MAE	0.187031	0.012054	test_EV	0.204565	0.124164	train_EV	0.259652	0.057601	
+fit_time	1.894473	0.298702	score_time	0.004107	0.000407	test_MSE	0.039952	0.006150	train_MSE	0.033584	0.004301	test_MAE	0.159017	0.017043	train_MAE	0.147166	0.012688	test_EV	0.389933	0.072661	train_EV	0.488146	0.067426	
