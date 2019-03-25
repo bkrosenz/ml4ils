@@ -10,7 +10,7 @@ from sys import argv
 from os import path
 plt.ion()
 
-def add_common_labels(fig,xlab,ylab):
+def add_common_labels(fig, xlab, ylab):
     fig.add_subplot(111, frameon=False)
     # hide tick and tick label of the big axes
     plt.tick_params(labelcolor='none', top='off', bottom='off', left='off', right='off')
@@ -29,25 +29,30 @@ with h5py.File(config['data'], mode='r', libver='latest') as h5f:
     algnames = list(h5f.keys())
     
 for alg in algnames:
-    y_frac_mask = np.load(path.join(respath,alg,'yfmask.npy'))
-
-    res = pd.read_csv(path.join(respath,alg,'results.'+alg+'.regress.preds.csv.gz'),index_col=0)
+    index_path = path.join(respath,alg,'ybmask.npz')
+    if not os.path.exists(index_path): continue
+    y_bin_inds = np.load()
+    y_bin_mask = np.hstack( (y_bin_inds['ils'], y_bin_inds['no_ils']) )
+    fpath = path.join(respath, alg, 'results.'+alg+'.classify.preds.csv.gz')
+    res = pd.read_csv(fpath, index_col=0)
     learners = res.columns.drop('y_true')
-    with h5py.File(config['data'], mode='r',libver='latest') as h5f:
+    with h5py.File(config['data'], mode='r', libver='latest') as h5f:
         ds = h5f[alg]
         y_attrs = ds['y'].attrs['column_names'].astype(str)
-        
+        # WARNING: assumes y_bin_mask is in format (ils_inds, no_ils_inds)
+        #AND that preds.csv is in format ils1,...,ilsn,no_ils1,...,no_ilsn)
         y_full = pd.DataFrame(
-            np.nan_to_num( ds['y'][y_frac_mask,:] ), columns = y_attrs
-        ).join( res )
-    print(alg, 'correlations', y_full.groupby(['ebl_mean', 'ibl_mean'])[learners].corrwith(y_full.y_true))
-    y_full.plot.hexbin('ebl_mean', 'ibl_mean' , gridsize=10)
+            np.nan_to_num( ds['y'] ), columns = y_attrs
+        ).iloc[y_bin_mask].reset_index().join( res )
+    print(fpath,'corr',
+          y_full.groupby(['ebl_mean', 'ibl_mean'])[learners].corrwith(y_full.y_true)) #,method='spearman')
+    #y_full.plot.hexbin('ebl_mean', 'ibl_mean' , gridsize=10)
     deviations = y_full[learners].apply(lambda x:np.abs(x-y_full.y_true))
     deviations[['ebl_mean', 'ibl_mean']] = y_full[['ebl_mean', 'ibl_mean']]
 
     ncols=3
     nrows=math.ceil(len(learners)/ncols)
-    vmin,vmax = 0,.7 # true and pred should always be in [1/3,1]
+    vmin,vmax = 0,.5
     cmap=plt.cm.Blues
     norm = matplotlib.colors.Normalize(vmin=vmin,vmax=vmax)
     fig, axs = plt.subplots(ncols=ncols,
@@ -73,7 +78,7 @@ for alg in algnames:
             fig.delaxes(ax)
     fig.colorbar( im, cax=cbar_ax)
     add_common_labels(fig,xlab=r'External Branch Length', ylab=r'Internal Branch Length')
-    fig.suptitle('Mean Absolute Deviation',size=16)
+    fig.suptitle('Mean Misclassification Error',size=15)
     plt.tight_layout(rect=[0,.03,.9,.95])
-    plt.savefig(path.join(respath,alg,'hexplot.regress.%s.png'%alg))
+    plt.savefig(path.join(respath,alg,'hexplot.classify.%s.png'%alg))
     plt.clf()

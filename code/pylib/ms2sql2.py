@@ -44,7 +44,7 @@ if __name__=="__main__":
     parser.add_argument('--infer',type=str,
                         help='sim model')
     parser.add_argument('--seqtype',type=str,
-                        help='dna or protein')
+                        help='dna or amino acid')
     parser.add_argument('--seqlength',type=int,
                         help='simulator (seqgen/indelible')
     parser.add_argument('--theta',type=float,
@@ -96,7 +96,8 @@ if __name__=="__main__":
         # for t in metadata.tables.keys():#reversed(metadata.sorted_tables):
         #     print( t )
         
-        metadata.drop_all(tables=reversed(metadata.sorted_tables))
+        try: metadata.drop_all(tables=reversed(metadata.sorted_tables))
+        except: print('no tables to drop:',reversed(metadata.sorted_tables))
         
         stree_table = Table('species_trees', metadata,
                             Column('id', String, primary_key=True),
@@ -128,7 +129,7 @@ if __name__=="__main__":
                             Column('seq_length',Integer),
                             PrimaryKeyConstraint(*itree_constraints, name='it_uix')
         )
-
+        
         metadata.create_all()
     
     else:
@@ -169,8 +170,8 @@ if __name__=="__main__":
     Session = sessionmaker(bind=engine)
     session = Session()
 
-    print(st_covs)
-    print ('path',itree_path)
+    #print(st_covs)
+    #print ('path',itree_path)
     
     params = dict(
         zip( param_names, (args.sim,

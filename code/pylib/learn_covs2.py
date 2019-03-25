@@ -35,8 +35,8 @@ def train_and_test(X,
                    metrics,
                    outfile,
                    outdir,
+                   nprocs,
                    fold_splitter=10,
-                   nprocs=1,
                    predict=False):
     """main loop"""
     results = dict.fromkeys( learners )
@@ -136,7 +136,8 @@ def main(args):
                                           n_estimators=40,
                                           **decision_tree_params),
         'AdaBoost':AdaBoostClassifier(n_estimators=40,
-                                      base_estimator=DecisionTreeClassifier(**decision_tree_params)),
+                                      base_estimator=DecisionTreeClassifier(
+                                          **decision_tree_params)),
         'GradBoost':GradientBoostingClassifier(n_estimators=40,
                                                criterion='friedman_mse',
                                                **decision_tree_params),
@@ -238,6 +239,8 @@ def main(args):
             modeldir=path.join(outdir,'models')
             if not path.exists(modeldir): mkdir(modeldir)            
 
+            #TODO: just use pd.read_hdf with where= argument
+            
             with h5py.File(args.data, mode='r',libver='latest') as h5f:
                 ds = h5f[alg]
                 y_attrs = ds['y'].attrs['column_names'].astype(str)
@@ -252,10 +255,10 @@ def main(args):
             # dict of the form: 'conditions':{'feature_name':'>2',...}
             if 'conditions' in args: 
                 for attr,cond in args.conditions.items():
-                    code = compile("ds['y'][:,{}]{}".format(
-                        y_attr2ind[attr], cond
+                    code = compile("(y_full['{}']{}).values".format(
+                        attr, cond
                     ), '', 'eval')
-                    print('setting',attr,cond)
+                    print('setting',attr,cond,eval(code))
                     y_frac_mask = np.logical_and(y_frac_mask,eval(code))
 
             if 'features' in args:
@@ -263,10 +266,11 @@ def main(args):
             X = x_full[x_attrs][y_frac_mask]
             y = y_full[ycount_attrs][y_frac_mask] # drop all features
 
-            sp_tree_cols = [ycount_attrs[s] for s in y_full['sp_tree_ind'].astype(int)]
+            sp_tree_cols = np.array([ycount_attrs[s] for s in y_full['sp_tree_ind'].astype(int)])
 
-            y_frac = y_full.lookup( np.squeeze(y_frac_mask.nonzero()),
-                                    sp_tree_cols) / y_full[ycount_attrs].sum(1)
+            print(ycount_attrs,y_full.index.shape, sp_tree_cols.shape)
+            y_frac = y_full.lookup(y_full.index, sp_tree_cols) / y_full[ycount_attrs].sum(1)
+            y_frac = y_frac[y_frac_mask] # TODO: instead of normalize then mask, optimize
 
             print('yfmask', y_frac_mask.shape)
             np.save(path.join(args.outdir,alg,'yfmask'), y_frac_mask)
@@ -275,25 +279,26 @@ def main(args):
 
             if args.balanced:
                 ind = np.argsort(y_frac)
-                ils = np.squeeze(np.where( y_frac < args.ils ))
-                n_ils = len(ils)
+                no_ils = np.squeeze(np.where( y_frac > args.ils ))
+                n_ils = len(no_ils)
+                print('using {} out of {}'.format(n_ils,len(y_frac)))
                 if n_ils > y_frac.size/2:
                     print('not enough samples for non-overlapping binarization with ils threshold', args.ils,'; using 50-50 split')
                     n_ils = ind.size//2
-                    ils = ind[:n_ils]
-                no_ils = ind[-n_ils:] 
+                    no_ils = ind[-n_ils:]
+                ils = ind[:n_ils] 
                 y_bin_ind = np.concatenate((ils,no_ils))
                 X_bin = X.iloc[y_bin_ind,:]
                 y_bin = np.concatenate(
                     (np.ones(n_ils), np.zeros(n_ils) )
                 )
-                y_bin_mask = np.vstack([ils,no_ils])
+                
             else:
                 X_bin = X
                 y_bin = y_frac < args.ils # ils = 1, no_ils = 0
-                y_bin_mask = np.vstack([np.where(y_bin),np.where(~y_bin)])
+                ils,no_ils = np.where(y_bin), np.where(~y_bin)
                 
-            np.save(path.join(args.outdir,alg,'ybmask'), y_bin_mask)
+            np.savez(path.join(args.outdir,alg,'ybmask'), ils=ils, no_ils=no_ils)
             
             print('\nclassifiers....\n')
             results_c = train_and_test(X_bin,

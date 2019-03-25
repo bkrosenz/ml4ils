@@ -159,7 +159,7 @@ def main(args):
 
             #TODO: this only ignores @ level of strees . should we ignore @ lev of subsamples?
             keep_idx = itops.index[(cmax-cmin)/csum < args.tol] # TODO: ignore polytomies
-                        
+            print('keeping',len(keep_idx),'trees')
             gtops=gtops.loc[keep_idx]
             itops=itops.loc[keep_idx]
 
