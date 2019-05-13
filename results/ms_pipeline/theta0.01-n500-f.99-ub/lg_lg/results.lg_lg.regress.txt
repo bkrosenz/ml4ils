@@ -1,0 +1,8 @@
+npos (ILS): 43644, nneg 9383, nfolds: 10
+metric	mean	std
+
+----
+MLP_big
+
+params:	{'activation': 'relu', 'alpha': 0.0001, 'batch_size': 50, 'beta_1': 0.9, 'beta_2': 0.999, 'early_stopping': False, 'epsilon': 1e-08, 'hidden_layer_sizes': (20, 20, 20, 20), 'learning_rate': 'adaptive', 'learning_rate_init': 0.001, 'max_iter': 500, 'momentum': 0.8, 'n_iter_no_change': 10, 'nesterovs_momentum': True, 'power_t': 0.5, 'random_state': None, 'shuffle': True, 'solver': 'sgd', 'tol': 0.0001, 'validation_fraction': 0.1, 'verbose': False, 'warm_start': False}
+fit_time	64.656900	9.689077	score_time	0.051523	0.001192	test_MSE	0.074408	0.052132	train_MSE	0.048829	0.003503	test_MAE	0.189544	0.010578	train_MAE	0.187246	0.010008	test_EV	-0.176263	0.817754	train_EV	0.225426	0.055449	
