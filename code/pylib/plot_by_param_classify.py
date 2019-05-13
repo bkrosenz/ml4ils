@@ -30,8 +30,8 @@ with h5py.File(config['data'], mode='r', libver='latest') as h5f:
     
 for alg in algnames:
     index_path = path.join(respath,alg,'ybmask.npz')
-    if not os.path.exists(index_path): continue
-    y_bin_inds = np.load()
+    if not path.exists(index_path): continue
+    y_bin_inds = np.load(index_path)
     y_bin_mask = np.hstack( (y_bin_inds['ils'], y_bin_inds['no_ils']) )
     fpath = path.join(respath, alg, 'results.'+alg+'.classify.preds.csv.gz')
     res = pd.read_csv(fpath, index_col=0)
@@ -68,7 +68,7 @@ for alg in algnames:
         if i<n:
             learner = learners[i]
             im = ax.hexbin(x=ebl, y=ibl, C=deviations[learner],
-                           gridsize=10, vmin=0, vmax=vmax,
+                           gridsize=20, vmin=0, vmax=vmax,
                            cmap=cmap)
             ax.set_title(learner)
             ax.set_facecolor("lightslategray")
@@ -77,7 +77,9 @@ for alg in algnames:
         else:
             fig.delaxes(ax)
     fig.colorbar( im, cax=cbar_ax)
-    add_common_labels(fig,xlab=r'External Branch Length', ylab=r'Internal Branch Length')
+    add_common_labels(fig,
+                      xlab=r'External Branch Length',
+                      ylab=r'Internal Branch Length')
     fig.suptitle('Mean Misclassification Error',size=15)
     plt.tight_layout(rect=[0,.03,.9,.95])
     plt.savefig(path.join(respath,alg,'hexplot.classify.%s.png'%alg))

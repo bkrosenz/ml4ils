@@ -36,6 +36,7 @@ def summarize(t):
 if __name__=="__main__":
 
     parser = argparse.ArgumentParser(description='Process some data.')
+    #TODO parallelize
     parser.add_argument('--outgroup',type=int,
                         default=4,
                         help='output database filename')
@@ -192,9 +193,9 @@ if __name__=="__main__":
     #### main loop
     for stree,s,i in zip(st_covs, gtree_files, itree_files):
         with open(i) as f:
-            itree_values = [ summarize(tree_config.make_tree(tree)) for tree in f.readlines() if '(' in tree ]
+            itree_values = [ summarize(tree_config.make_tree(tree)) for tree in f if utils.is_newick(tree) ]
         with open(s) as f:
-            gtree_values = [ summarize(tree_config.make_tree(tree)) for tree in f.readlines() if '(' in tree ]
+            gtree_values = [ summarize(tree_config.make_tree(tree)) for tree in f if utils.is_newick(tree) ]
         if not itree_values or not gtree_values: # empty files
             continue
         for statement in [

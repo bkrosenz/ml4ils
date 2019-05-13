@@ -7,7 +7,7 @@ import sqlalchemy as sa
 from sqlalchemy.sql.expression import func
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.schema import PrimaryKeyConstraint,UniqueConstraint
-
+import time
 import matplotlib
 matplotlib.use('Agg')
 from itertools import chain,islice
@@ -74,17 +74,34 @@ def default_counter(keys,counts):
 def process_df_helper(df, xcols, ycols, xtop_col=None, ytop_col=None, topnames=None, flatten=True):
     """Arguments: dataframe of a single set of gene trees, list of x and y cols.
     Returns: (*summaries_of_xcols,*xtops),(*summaries_of_ycols,*ytops)"""
-#    print (df.columns)
-    x = np.empty((len(utils.summaries), len(xcols)))
-    utils.summarize_into(df[xcols], x)
-    y = np.empty((len(utils.summaries), len(ycols)))
-    utils.summarize_into(df[ycols], y)
-    if flatten:
+    #    print (df.columns)
+    nstats,ntops = len(utils.summaries),len(topnames)
+    print('\n-----\nx',xtop_col, ytop_col, topnames,flatten)
+    if xtop_col is not None and ytop_col is not None and topnames is not None and flatten:
+        xtops=default_counter(topnames, Counter(df[xtop_col]))
+        #dict.fromkeys(topnames).update(Counter(df[xtop_col])
+        #df[xtop_col].value_counts().values.flatten()
+        ytops=default_counter(topnames, Counter(df[ytop_col]))
+        x = np.empty((nstats*ntops, len(xcols)))
+        y = np.empty((nstats*ntops, len(ycols)))
+        for i,top_name in enumerate(topnames):
+            inds = slice(nstats*i, nstats*(i+1))
+#            print('summarizing:',top_name,inds)
+            utils.summarize_into(df[xcols][df[xtop_col]==top_name],
+                                 x[inds, :])
+            utils.summarize_into(df[ycols][df[ytop_col]==top_name],
+                                 y[inds, :])
+#        print(x.shape,len(xtops))
         x, y=x.flatten('F'), y.flatten('F') # default is row-major
-        if xtop_col is not None and ytop_col is not None and topnames is not None:
-            xtops=default_counter(topnames, Counter(df[xtop_col])) #dict.fromkeys(topnames).update(Counter(df[xtop_col]) #df[xtop_col].value_counts().values.flatten()
-            ytops=default_counter(topnames, Counter(df[ytop_col]))
-            return ( np.concatenate((x,xtops)), np.concatenate((y,ytops)) )
+        x,y = np.concatenate((x,xtops)), np.concatenate((y,ytops)) 
+    else:
+        x = np.empty((nstats, len(xcols)))
+        utils.summarize_into(df[xcols], x)
+        y = np.empty((nstats, len(ycols)))
+        utils.summarize_into(df[ycols], y)
+        if flatten:
+            x, y=x.flatten('F'), y.flatten('F') # default is row-major
+
     return (x,y)
 
 def make_hdf5_file(outpath,algnames,xcols,ycols,overwrite=False):
@@ -111,7 +128,7 @@ def main(args):
                                  subtree_sizes=[4])
               
     #### start processing
-    algnames =  [a1+'_'+a2 for a1, a2 in utils.combr(('wag','lg'),2)]
+    algnames =  [a1+'_'+a2 for a1, a2 in utils.product(*[('wag','lg')]*2)]
     
     # col names for sql db
     cov_cols = next(tree_config.cov_iter(range(1,tree_config.subtree_sizes[0]+1)))
@@ -119,11 +136,11 @@ def main(args):
     true_numeric_cols = ['g_'+c for c in numeric_cols] 
 
     stree_cols =['ebl','ibl','s_length']
-    sp_tree = '(4,(3,(1,2)));' # todo : dont hardcode
+    sp_tree = '(4,(3,(1,2)));' # TODO : dont hardcode
     
-    tops = list( tree_config.nw_iter() ) # note: MUST SORT, ow will not match order of pd.Series.value_counts
+    tops = list( tree_config.nw_iter() ) # NOTE: MUST SORT, ow will not match order of pd.Series.value_counts
 
-    summary_strs = lambda pref: [pref+'_'+summary for summary in utils.summaries]
+    summary_strs = lambda pref: [pref+'_'+summary+'_'+top for summary in utils.summaries for top in tops]
 
     summaries = reduce(add,map(summary_strs,numeric_cols))
     
@@ -141,7 +158,9 @@ def main(args):
     
     print('hdf5 shapes:',hdf5_store.shapes,tree_config.subtree_sizes, hdf5_store.dtypes)
 
-    engine = create_engine('postgresql://bkrosenz@localhost/sim4') #sqlite:///%s'%args.out)
+    engine = create_engine('postgresql://bkrosenz@localhost/sim4',
+                           pool_size=args.procs, max_overflow=0
+    ) #sqlite:///%s'%args.out)
     metadata = MetaData(bind=engine)
     metadata.reflect()
       
@@ -159,7 +178,7 @@ def main(args):
 
             #TODO: this only ignores @ level of strees . should we ignore @ lev of subsamples?
             keep_idx = itops.index[(cmax-cmin)/csum < args.tol] # TODO: ignore polytomies
-            print('keeping',len(keep_idx),'trees')
+            print('keeping',len(keep_idx),'out of',len(itops),'trees')
             gtops=gtops.loc[keep_idx]
             itops=itops.loc[keep_idx]
 
@@ -169,7 +188,8 @@ def main(args):
             # ).loc[keep_idx].distinct('sid').values
             # print(s_stats.shape,s_stats)
             # get other stats
-            summaries = Parallel(n_jobs=args.procs)(
+            now = time.time()
+            summary_list = Parallel(n_jobs=args.procs)(
                 delayed( process_df )( pd.read_sql(q.statement,q.session.bind),
                                        xcols=numeric_cols,
                                        ycols=true_numeric_cols+stree_cols,
@@ -181,8 +201,8 @@ def main(args):
                         session.query(table).filter(table.c.sid==sid) for sid in keep_idx
                 )
             )
-
-            x,y = zip(*chain.from_iterable(summaries)) # assume summaries is list of lists
+            print('summarized in',time.time()-now,'sec')
+            x,y = zip(*chain.from_iterable(summary_list)) # assume summaries is list of lists
             x=np.array(x)
 
             y=np.vstack(y)
@@ -190,13 +210,15 @@ def main(args):
 
             # todo: modify for splits
 
-            st_ind = xcols.index(sp_tree)
             
             #            concordant = (itops.idxmax(axis=1)==sp_tree).values
-            xcol_dict = dict((k,v) for v,k in enumerate(xcols))
-            top_idx = [xcol_dict[k] for k in tops]
+            # xcol_dict = dict((k,v) for v,k in enumerate(xcols))
+            # top_idx = [ycol_dict['g_'+k] for k in tops]
+
+            top_idx = [ycols.index('g_'+k) for k in tops]
+            
+            st_ind = top_idx.index( ycols.index('g_'+sp_tree) )
             concordant = y[:,top_idx].argmax(1)==st_ind
-#            print ('\nconc',y[:,top_idx],concordant.shape)
             n_strees=len(concordant)
             n_samples,n_features = x.shape
             sp_tree_ind = np.empty( (n_samples, 1) )
@@ -224,7 +246,7 @@ def main(args):
             raise e
         finally:
             pass
-    print('finished!')
+    print('finished - wrote hdf to:',outpath)
 
 
 if __name__=="__main__":
@@ -244,8 +266,8 @@ if __name__=="__main__":
     parser.add_argument('--verbose',action='store_true',help='debug')
     parser.add_argument('--overwrite',action='store_true',help='overwrite')
     parser.add_argument('--threads','-t',type=int,help='num threads per proc',default=4)
-    parser.add_argument('--tol', default=.3,
-                        help='''observed frequencies must be within "tol" of each other
+    parser.add_argument('--tol', default=2,
+                        help='''observed frequencies must be within "tol" \in [0,1] of each other
                         to be considered discordant''')
     
     #TODO: make these 2 into a mutually exclusive required group

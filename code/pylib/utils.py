@@ -32,6 +32,11 @@ leaves2cov = lambda leaf1,leaf2: ':'.join((leaf1,leaf2))
 pair2cov = lambda pair: ':'.join(map(str,pair))
 triplet2nw = lambda a,b,c: '(%s,(%s,%s);'%(*sorted((a,b)),c)
 
+def is_newick(tree):
+    "necess but not suff test for newickness"
+    t = tree.strip()
+    return t.startswith('(') and t.endswith(';')
+
 def tips(leaves):
     if type(leaves)==str:
         return [pair2cov((c,c)) for c in leaves.split(',')]
@@ -325,7 +330,7 @@ class HDF5Store(object):
         self.chunk_len=chunk_len
         self.dtypes = dtypes
         self.noNans = nan_to_num
-        attribute_list = (np.array(a, dtype='S20') for a in attributes[1])  # utf8
+        attribute_list = (np.array(a, dtype='U50') for a in attributes[1])  # utf8
             
         if not path.isfile(datapath):
             with h5py.File(self.datapath, mode='w',libver='latest') as h5f:

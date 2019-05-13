@@ -99,26 +99,13 @@ def train_and_test(X,
         pred_df = pd.DataFrame({**preds,'y_true':y})
         pred_df.to_csv(outfile+'.preds.csv.gz',compression='gzip')
 
-    # weights trained on WHOLE dataset
-    d = {
-        learner_name:u.get_features(clone(learner).fit(X,y))
-        for learner_name, learner in learners.items()
-    }
-    
+    # weights trained on WHOLE dataset    
     for learner_name, learner in learners.items():
         clf = clone(learner)
         clf.fit(X,y)
         
         dump(clf,path.join(outdir,'models',learner_name+'.pkl.gz')) # pickle it
         
-        # ftrs = u.get_features(clf)
-        # if ftrs is not None:
-        #     print(len(ftrs),X.shape,y.shape)
-               
-    feature_weights = pd.DataFrame.from_dict( d )
-    #    feature_weights.index = X.columns
-    feature_weights.to_csv(outfile+'.features.csv')
-
 def main(args):
     # use for both class and regress
     decision_tree_params = {
@@ -129,24 +116,15 @@ def main(args):
     classification_learners = {
         'Random':DummyClassifier('stratified'),
         'Trivial':DummyClassifier('most_frequent'),
-        # 'RBF-SVM':SVC(kernel='rbf',
-        #               gamma='auto',
-        #               max_iter=1000,
-        #               probability=args.predict # if we need the predictions; o.w. its faster
-        # ),
         'RF':RandomForestClassifier(bootstrap=True,
                                     n_estimators=40,
                                     **decision_tree_params),
-        # 'ExtraTrees':ExtraTreesClassifier(bootstrap=True,
-        #                                   n_estimators=40,
-        #                                   **decision_tree_params),
         'AdaBoost':AdaBoostClassifier(n_estimators=40,
                                       base_estimator=DecisionTreeClassifier(
                                           **decision_tree_params)),
         'GradBoost':GradientBoostingClassifier(n_estimators=40,
                                                criterion='friedman_mse',
                                                **decision_tree_params),
-        # 'GP':GaussianProcessClassifier(copy_X_train=False),
         'LogisticReg':LogisticRegressionCV(Cs=5,
                                            penalty='l1',
                                            class_weight = 'balanced',
@@ -154,20 +132,11 @@ def main(args):
                                            max_iter=100,
                                            tol=1e-4,
                                            cv=3),
-        # 'MLP':MLPClassifier(solver='sgd',
-        #                     batch_size=50,
-        #                     learning_rate='adaptive',
-        #                     learning_rate_init=0.01,
-        #                     momentum=0.9,
-        #                     nesterovs_momentum=True,
-        #                     hidden_layer_sizes=(10,10,10),
-        #                     max_iter=1000,
-        #                     shuffle=True),
         'MLP-big':MLPClassifier(solver='sgd',
                                 batch_size=50,
                                 learning_rate='adaptive',
                                 learning_rate_init=0.01,
-                                momentum=0.9,
+                                momentum=0.8,
                                 nesterovs_momentum=True,
                                 hidden_layer_sizes=(20,20,20,20),
                                 tol=1e-4,
@@ -184,35 +153,23 @@ def main(args):
         'RF':RandomForestRegressor(bootstrap=True,
                                    n_estimators=40,
                                    **decision_tree_params),
-        # 'ExtraTrees':ExtraTreesRegressor(bootstrap=True,
-        #                                  n_estimators=40,
-        #                                  **decision_tree_params),
         'GradBoost':GradientBoostingRegressor(n_estimators=40,
                                               criterion='friedman_mse',
                                               **decision_tree_params),
         'AdaBoost':AdaBoostRegressor(
             n_estimators=40,
             base_estimator=DecisionTreeRegressor(**decision_tree_params)),
-        # 'GP':GaussianProcessRegressor(copy_X_train=False),
         'ElasticNet':ElasticNetCV(cv=3,
                                   precompute='auto',
                                   n_alphas=50,
                                   normalize=False,
                                   selection='random',
                                   max_iter=500),
-        # 'MLP':MLPRegressor(solver='sgd',
-        #                    batch_size=50,
-        #                    learning_rate='adaptive',
-        #                    learning_rate_init=0.01,
-        #                    momentum=0.9,
-        #                    nesterovs_momentum=True,
-        #                    hidden_layer_sizes=(10,10,10),
-        #                    max_iter=1000, shuffle=True),
         'MLP_big':MLPRegressor(solver='sgd',
                                batch_size=50,
                                learning_rate='adaptive',
-                               learning_rate_init=0.01,
-                               momentum=0.9,                    
+                               learning_rate_init=0.001,
+                               momentum=0.8,                    
                                nesterovs_momentum=True,
                                hidden_layer_sizes=(20,20,20,20),
                                tol=1e-4,
@@ -325,16 +282,16 @@ def main(args):
             
             print('\nclassifiers....\n')
             now = time()
-            # results_c = train_and_test(X_bin.values,
-            #                            y_bin.values,
-            #                            classification_learners,
-            #                            c_metrics,
-            #                            outfile=path.join(outdir,
-            #                                              'results.%s.classify'%alg),
-            #                            outdir=outdir,
-            #                            fold_splitter=StratifiedKFold(args.folds,shuffle=True,random_state=SEED),
-            #                            nprocs=args.procs,
-            #                            predict=args.predict)
+            results_c = train_and_test(X_bin.values,
+                                       y_bin.values,
+                                       classification_learners,
+                                       c_metrics,
+                                       outfile=path.join(outdir,
+                                                         'results.%s.classify'%alg),
+                                       outdir=outdir,
+                                       fold_splitter=StratifiedKFold(args.folds,shuffle=True,random_state=SEED),
+                                       nprocs=args.procs,
+                                       predict=args.predict)
             print('time:',time()-now)
             # compute results
             print('\nregressors....\n')

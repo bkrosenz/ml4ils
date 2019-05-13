@@ -41,7 +41,7 @@ for alg in algnames:
             np.nan_to_num( ds['y'][y_frac_mask,:] ), columns = y_attrs
         ).join( res )
     print(alg, 'correlations', y_full.groupby(['ebl_mean', 'ibl_mean'])[learners].corrwith(y_full.y_true))
-    y_full.plot.hexbin('ebl_mean', 'ibl_mean' , gridsize=10)
+    #y_full.plot.hexbin('ebl_mean', 'ibl_mean' , gridsize=10)
     deviations = y_full[learners].apply(lambda x:np.abs(x-y_full.y_true))
     deviations[['ebl_mean', 'ibl_mean']] = y_full[['ebl_mean', 'ibl_mean']]
 
@@ -63,7 +63,7 @@ for alg in algnames:
         if i<n:
             learner = learners[i]
             im = ax.hexbin(x=ebl, y=ibl, C=deviations[learner],
-                           gridsize=10, vmin=0, vmax=vmax,
+                           gridsize=20, vmin=0, vmax=vmax,
                            cmap=cmap)
             ax.set_title(learner)
             ax.set_facecolor("lightslategray")

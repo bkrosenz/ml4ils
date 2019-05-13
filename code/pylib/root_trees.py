@@ -5,7 +5,9 @@ from os import path
 # <in> <out> <outgroup>
 
 # does not overwrite
-if path.exists(argv[2]):
+#print(argv)
+if ( len(argv)<5 or argv[4]!='overwrite' ) and path.exists(argv[2]):
+    print('refusing to overwrite', argv[2])
     exit
 
 with open(argv[1],'r') as fin, open(argv[2],'w',buffering=1000) as fout:
@@ -16,5 +18,3 @@ with open(argv[1],'r') as fin, open(argv[2],'w',buffering=1000) as fout:
             fout.write(t.write()+'\n')
         except:
             fout.write(line)
-        
-                           
