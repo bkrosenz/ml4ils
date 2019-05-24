@@ -1,0 +1,17 @@
+npos (ILS): 10027, nneg 19995, nfolds: 4
+metric	mean	std
+
+----
+Random
+
+params:	{'constant': None, 'random_state': None, 'strategy': 'stratified'}
+fit_time	0.564569	0.032205	score_time	0.113739	0.007730	test_Acc	0.554127	0.008487	train_Acc	0.554438	0.000979	test_F1	0.339153	0.003172	train_F1	0.336381	0.005502	test_Prec	0.329332	0.003599	train_Prec	0.332525	0.002873	test_Recall	0.340780	0.004445	train_Recall	0.331638	0.004110	test_MCC	0.000327	0.007148	train_MCC	0.002564	0.000534	
+----
+Trivial
+
+params:	{'constant': None, 'random_state': None, 'strategy': 'most_frequent'}
+fit_time	0.520134	0.005113	score_time	0.111356	0.006158	test_Acc	0.666012	0.000019	train_Acc	0.666012	0.000006	test_F1	0.000000	0.000000	train_F1	0.000000	0.000000	test_Prec	0.000000	0.000000	train_Prec	0.000000	0.000000	test_Recall	0.000000	0.000000	train_Recall	0.000000	0.000000	test_MCC	0.000000	0.000000	train_MCC	0.000000	0.000000	
+----
+RF
+
+params:	{'bootstrap': True, 'class_weight': None, 'criterion': 'gini', 'max_depth': 3, 'max_features': 'auto', 'max_leaf_nodes': None, 'min_impurity_decrease': 0.0, 'min_impurity_split': None, 'min_samples_leaf': 1, 'min_samples_split': 2, 'min_weight_fraction_leaf': 0.0, 'n_estimators': 40, 'n_jobs': None, 'oob_score': False, 'random_state': None, 'verbose': 0, 'warm_start': False}

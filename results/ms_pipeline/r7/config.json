@@ -1,0 +1,17 @@
+{"features": ["vmr_mean",
+"vmr_std",
+"vmr_min",
+"vmr_max",
+"vmr_median",
+"length_mean",
+"length_std",
+"length_min",
+"length_max",
+"length_median",
+"(4,(1,(2,3)));",
+"(4,(3,(1,2)));",
+"(4,(2,(1,3)));"],
+  "folds":10,
+ "balanced":true,
+ "data": "/N/dc2/projects/bkrosenz/deep_ils/results/ms1000aa-n500.hdf5"
+}
