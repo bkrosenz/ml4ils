@@ -5,7 +5,7 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
-from sys import argv
+#from sys import argv
 from os import path
 plt.ion()
 
@@ -37,7 +37,7 @@ count_cols=[ 'g_(4,(1,(2,3)));',
          'g_(4,(3,(1,2)));',
          'g_(4,(2,(1,3)));',]
 
-for alg in ['lg_wag'] :#algnames:
+for alg in algnames: #['lg_wag'] :#
     try:
         index_path = path.join(respath,alg,'ybmask.npz')
         y_bin_inds = np.load(index_path)
@@ -57,7 +57,9 @@ for alg in ['lg_wag'] :#algnames:
             y_full = y_full.iloc[y_bin_mask.ravel()].reset_index()
         y_full = y_full.drop(columns=[c for c in y_attrs if sp_tree not in c and c not in count_cols ])\
                        .join( res )
-    
+    if y_full.empty:
+        print('no data found for ',alg,argv[1])
+        continue
     # print('corr',
     #       y_full.groupby(['ebl_mean', 'ibl_mean'])[learners].corrwith(y_full.y_true)) #,method='spearman')
 
@@ -74,7 +76,7 @@ for alg in ['lg_wag'] :#algnames:
 
     ncols=3
     nrows=math.ceil(len(learners)/ncols)
-    vmin,vmax = 0,.5
+    vmin,vmax = 0, .5
     cmap=plt.cm.Blues
     norm = matplotlib.colors.Normalize(vmin=vmin,vmax=vmax)
     fig, axs = plt.subplots(ncols=ncols,
@@ -90,7 +92,7 @@ for alg in ['lg_wag'] :#algnames:
         if i<n:
             learner = learners[i]
             im = ax.hexbin(x=ebl, y=ibl, C=misclass[learner],
-                           gridsize=40, vmin=0, vmax=vmax,
+                           gridsize=40, vmin=vmin, vmax=vmax,
                            yscale='log',
                            cmap=cmap)
             ax.set_title(learner)

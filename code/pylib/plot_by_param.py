@@ -2,7 +2,7 @@ import math
 from sklearn import metrics
 import matplotlib,json,h5py
 #matplotlib.use('TkAgg') # uncomment for gui
-matplotlib.use('Agg')
+matplotlib.use('Qt5Agg')
 import re
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -42,7 +42,7 @@ for alg in algnames:
     with h5py.File(config['data'], mode='r',libver='latest') as h5f:
         ds = h5f[alg]
         y_attrs = ds['y'].attrs['column_names'].astype(str)
-        if sum(y_frac_mask)==len(y_frac_mask):
+        if sum(y_frac_mask)==len(y_frac_mask): # aka config['balanced']==True
             y_full = pd.DataFrame(
                 np.nan_to_num( ds['y'] ), 
                 columns = y_attrs
@@ -57,15 +57,22 @@ for alg in algnames:
                 .drop(columns=[c for c in y_attrs if not sp_tree in c])\
                 .join( res )
         y_full.columns=[rx.sub('',s) for s in y_full.columns]
+    if y_full.empty:
+        print('no data found for ',alg,argv[1])
+        continue
         
     print(alg, 'correlations', y_full.groupby(['ebl_mean', 'ibl_mean'])[learners].corrwith(y_full.y_true))
     #y_full.plot.hexbin('ebl_mean', 'ibl_mean' , gridsize=10)
-    deviations = y_full[learners].apply(lambda x:np.abs(x-y_full.y_true))
+    deviations = y_full[learners].apply(lambda x:np.abs(x-y_full.y_true)) # TODO: try w/o abs (can't do logscale, however)
     deviations[['ebl_mean', 'ibl_mean']] = y_full[['ebl_mean', 'ibl_mean']]
+    ebl = deviations['ebl_mean']
+    ibl = deviations['ibl_mean']
+    deviations.to_csv(path.join(respath,alg,'deviations.regress.%s.csv.gz'%alg))
 
+    n = len(learners)
     ncols=3
     nrows=math.ceil(len(learners)/ncols)
-    vmin,vmax = 0,.7 # true and pred should always be in [1/3,1]
+    vmin,vmax = 1e-6,.7 # true and pred should always be in [1/3,1]
     cmap=plt.cm.Blues
     norm = matplotlib.colors.Normalize(vmin=vmin,vmax=vmax)
     fig, axs = plt.subplots(ncols=ncols,
@@ -74,16 +81,22 @@ for alg in algnames:
                             sharey=True,
                             figsize=(6,6))
     cbar_ax = fig.add_axes([.91, .3, .03, .4])
-    ebl = deviations['ebl_mean']
-    ibl = deviations['ibl_mean']
-    n = len(learners)
+
     for i,ax in enumerate(axs.ravel()):
         if i<n:
             learner = learners[i]
-            im = ax.hexbin(x=ebl, y=ibl, C=deviations[learner],
-                           gridsize=40, vmin=0, vmax=vmax,
-                           yscale='log',
-                           cmap=cmap)
+            try:
+                im = deviations.plot.hexbin(x='ebl', y='ibl', C='learner',ax=ax,
+                               gridsize=40, vmin=vmin, vmax=vmax, 
+                               cmap=cmap)
+                # unresolved bug in matplotlib w/ noninteractive plots: https://github.com/matplotlib/matplotlib/issues/5541/
+                # im = ax.hexbin(x=ebl, y=ibl, C=deviations[learner],
+                #                gridsize=40, vmin=vmin, vmax=vmax, 
+                #                cmap=cmap)
+                ax.set_yscale("log")
+            except ValueError as e:
+                print(learner,alg,argv[1],deviations[learner])
+                raise e
             ax.set_title(learner)
             ax.set_facecolor("lightslategray")
             ax.xaxis.label.set_visible(False)

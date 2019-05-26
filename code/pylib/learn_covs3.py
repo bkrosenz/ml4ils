@@ -259,7 +259,7 @@ def main(args):
             X = x_full[x_attrs][y_frac_mask]
             y = y_full[ycount_attrs][y_frac_mask] # drop all features
 
-            sp_tree_cols = np.array([ycount_attrs[s] for s in y_full['sp_tree_ind'].astype(int)])
+            sp_tree_cols = np.array([ycount_attrs[s] for s in y_full['sp_tree_ind'].astype(int)]) # get col of true sp tree; should always be the same
 
             # print(ycount_attrs,y_full.index.shape, np.unique(sp_tree_cols),'\n',
             #       y_full[ycount_attrs].sum(1),
@@ -274,6 +274,7 @@ def main(args):
             np.save(path.join(args.outdir,alg,'yfmask'), y_frac_mask)
             # classification
 
+            # TODO: don't reorder the input data!
             if args.balanced:
                 ind = np.argsort(y_frac)
                 no_ils = np.squeeze(np.where( y_frac > args.ils ))
