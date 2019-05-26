@@ -229,6 +229,8 @@ class TreeConfig:
         for c in taxa_subsets:
             yield [pair2cov(leaves) for leaves in combr(c,2)]
 
+    def __repr__(self):
+        return '{}\n{}\noutgroup: {}\n'.format(type(self),self.leafnames,self.outgroup_name)
 
 ##### covariance -> top funcs
 #@numba.njit(parallel=True) 
@@ -330,7 +332,7 @@ class HDF5Store(object):
         self.chunk_len=chunk_len
         self.dtypes = dtypes
         self.noNans = nan_to_num
-        attribute_list = (np.array(a, dtype='U50') for a in attributes[1])  # utf8
+        attribute_list = (np.array(a, dtype='S100') for a in attributes[1])  # utf8
             
         if not path.isfile(datapath):
             with h5py.File(self.datapath, mode='w',libver='latest') as h5f:

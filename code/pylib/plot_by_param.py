@@ -3,6 +3,7 @@ from sklearn import metrics
 import matplotlib,json,h5py
 #matplotlib.use('TkAgg') # uncomment for gui
 matplotlib.use('Agg')
+import re
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
@@ -27,19 +28,36 @@ with open(path.join(respath,'config.json')) as confile:
 
 with h5py.File(config['data'], mode='r', libver='latest') as h5f:
     algnames = list(h5f.keys())
+
+sp_tree="_(4,(3,(1,2)));"
+rx=re.compile(re.escape(sp_tree))
     
 for alg in algnames:
-    y_frac_mask = np.load(path.join(respath,alg,'yfmask.npy'))
-
-    res = pd.read_csv(path.join(respath,alg,'results.'+alg+'.regress.preds.csv.gz'),index_col=0)
+    try:
+        y_frac_mask = np.load(path.join(respath,alg,'yfmask.npy'))
+        res = pd.read_csv(path.join(respath,alg,'results.'+alg+'.regress.preds.csv.gz'),index_col=0)
+    except FileNotFoundError:
+        continue
     learners = res.columns.drop('y_true')
     with h5py.File(config['data'], mode='r',libver='latest') as h5f:
         ds = h5f[alg]
         y_attrs = ds['y'].attrs['column_names'].astype(str)
+        if sum(y_frac_mask)==len(y_frac_mask):
+            y_full = pd.DataFrame(
+                np.nan_to_num( ds['y'] ), 
+                columns = y_attrs
+                )\
+                .drop(columns=[c for c in y_attrs if not sp_tree in c])\
+                .join( res )
+        else:
+            y_full = pd.DataFrame(
+                np.nan_to_num( ds['y'][y_frac_mask,:] ), 
+                columns = y_attrs
+                )\
+                .drop(columns=[c for c in y_attrs if not sp_tree in c])\
+                .join( res )
+        y_full.columns=[rx.sub('',s) for s in y_full.columns]
         
-        y_full = pd.DataFrame(
-            np.nan_to_num( ds['y'][y_frac_mask,:] ), columns = y_attrs
-        ).join( res )
     print(alg, 'correlations', y_full.groupby(['ebl_mean', 'ibl_mean'])[learners].corrwith(y_full.y_true))
     #y_full.plot.hexbin('ebl_mean', 'ibl_mean' , gridsize=10)
     deviations = y_full[learners].apply(lambda x:np.abs(x-y_full.y_true))
@@ -63,7 +81,8 @@ for alg in algnames:
         if i<n:
             learner = learners[i]
             im = ax.hexbin(x=ebl, y=ibl, C=deviations[learner],
-                           gridsize=20, vmin=0, vmax=vmax,
+                           gridsize=40, vmin=0, vmax=vmax,
+                           yscale='log',
                            cmap=cmap)
             ax.set_title(learner)
             ax.set_facecolor("lightslategray")

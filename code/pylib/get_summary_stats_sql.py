@@ -71,13 +71,14 @@ def process_df(df, xcols, ycols, xtop_col, ytop_col, topnames, flatten=True, spl
 def default_counter(keys,counts):
     return [counts[k] if k in counts else 0 for k in keys]
         
-def process_df_helper(df, xcols, ycols, xtop_col=None, ytop_col=None, topnames=None, flatten=True):
+def process_df_helper(df, xcols, ycols=None, xtop_col=None, ytop_col=None, topnames=None, flatten=True):
     """Arguments: dataframe of a single set of gene trees, list of x and y cols.
     Returns: (*summaries_of_xcols,*xtops),(*summaries_of_ycols,*ytops)"""
     #    print (df.columns)
-    nstats,ntops = len(utils.summaries),len(topnames)
-    print('\n-----\nx',xtop_col, ytop_col, topnames,flatten)
+    nstats = len(utils.summaries)
+    #print('\n-----\nx',xtop_col, ytop_col, topnames,flatten)
     if xtop_col is not None and ytop_col is not None and topnames is not None and flatten:
+        ntops = len(topnames)
         xtops=default_counter(topnames, Counter(df[xtop_col]))
         #dict.fromkeys(topnames).update(Counter(df[xtop_col])
         #df[xtop_col].value_counts().values.flatten()
@@ -96,11 +97,15 @@ def process_df_helper(df, xcols, ycols, xtop_col=None, ytop_col=None, topnames=N
         x,y = np.concatenate((x,xtops)), np.concatenate((y,ytops)) 
     else:
         x = np.empty((nstats, len(xcols)))
+        y = np.empty(0)
         utils.summarize_into(df[xcols], x)
-        y = np.empty((nstats, len(ycols)))
-        utils.summarize_into(df[ycols], y)
         if flatten:
-            x, y=x.flatten('F'), y.flatten('F') # default is row-major
+            x=x.flatten('F')
+        if ycols:
+            y = np.empty((nstats, len(ycols)))
+            utils.summarize_into(df[ycols], y)
+            if flatten:
+                y=y.flatten('F') # default is row-major
 
     return (x,y)
 
@@ -140,7 +145,7 @@ def main(args):
     
     tops = list( tree_config.nw_iter() ) # NOTE: MUST SORT, ow will not match order of pd.Series.value_counts
 
-    summary_strs = lambda pref: [pref+'_'+summary+'_'+top for summary in utils.summaries for top in tops]
+    summary_strs = lambda pref: [pref+'_'+summary+'_'+top for top in tops for summary in utils.summaries]
 
     summaries = reduce(add,map(summary_strs,numeric_cols))
     
@@ -153,7 +158,8 @@ def main(args):
              ['sp_tree_ind', 'concordant']
     print( 'xc',xcols,'yc',ycols)
 
-    outpath=path.join(args.outdir,args.outfile)    
+    outpath=path.join(args.outdir,args.outfile)
+    #TODO: these are misnamed (std's < 0). fix it.
     hdf5_store = make_hdf5_file(outpath,algnames,xcols,ycols,args.overwrite)
     
     print('hdf5 shapes:',hdf5_store.shapes,tree_config.subtree_sizes, hdf5_store.dtypes)

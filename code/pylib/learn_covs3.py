@@ -12,7 +12,7 @@ from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.feature_selection import SelectFromModel
 from sklearn.base import clone
-from tempfile import mkdtemp
+from tempfile import TemporaryDirectory
 from os import mkdir
 from glob import glob
 import utils as u
@@ -46,23 +46,23 @@ def train_and_test(X,
     imputer = SimpleImputer()
     if predict:
         preds = dict.fromkeys( learners )
-    with open(outfile+'.txt','w') as f:
+    with open(outfile+'.txt','w') as f, TemporaryDirectory() as tmpdir:
         npos=sum(y)
         f.write('npos (ILS): %d, nneg %d, nfolds: %d\n' %(npos,len(y)-npos,fold_splitter.n_splits))
         f.write('metric\tmean\tstd\n')
-        
         for learner_name, learner in learners.items():
             f.write('\n----\n%s\n'%learner_name)
             f.write('\nparams:\t%s\n'%learner.get_params())
             res = []
             true = []
-
+            
             clf = make_pipeline(imputer,
                                 scaler,
                                 learner,
-                                memory = mkdtemp()) #SelectFromModel(learner,threshold='mean'))
+                                memory = tmpdir) #SelectFromModel(learner,threshold='mean'))
             print('CV: ',learner_name,learner,'y:',y.shape)
-            results[learner_name] = cross_validate(clf,
+            try:
+                results[learner_name] = cross_validate(clf,
                                                    X,
                                                    y,
                                                    scoring = metrics,
@@ -71,7 +71,10 @@ def train_and_test(X,
 #                                                   return_estimator = predict,
                                                    n_jobs = nprocs)
             
-
+            except Exception as e:
+                print('exception in:',learner_name,clf) # TODO: sys.stderr.write()
+                #raise e
+                print(e)
             if predict:
                 try:
                     preds[learner_name] = cross_val_predict(clf,
@@ -79,17 +82,19 @@ def train_and_test(X,
                                                             y,
                                                             cv = fold_splitter, # Kfold or StratifiedKFold depending on type of learner
                                                             n_jobs = nprocs,
+                                                            pre_dispatch = 2*nprocs,
                                                             method='predict_proba')[:,1]
                 except AttributeError: # most likely has no predict proba feature
                     preds[learner_name] = cross_val_predict(clf,
                                                             X,
                                                             y,
+                                                            pre_dispatch = 2*nprocs,
                                                             cv = fold_splitter, # Kfold or StratifiedKFold depending on type of learner
                                                             n_jobs = nprocs)
 
             for k,v in results[learner_name].items():
                 f.write('%s\t%f\t%f\t'%(k,np.mean(v),np.std(v)))
-
+        
     df = u.multidict_to_df(
         results,
         names = ['learners','metrics']
@@ -109,18 +114,20 @@ def train_and_test(X,
 def main(args):
     # use for both class and regress
     decision_tree_params = {
-        'max_depth':3,
+        'max_depth':4,
         'min_samples_leaf':1
     }
     
     classification_learners = {
         'Random':DummyClassifier('stratified'),
-        'Trivial':DummyClassifier('most_frequent'),
-        'RF':RandomForestClassifier(bootstrap=True,
-                                    n_estimators=40,
-                                    **decision_tree_params),
+        'Trivial':DummyClassifier('prior'), # same as most_frequent, except predict_proba returns the class prior.
+        # 'RF':RandomForestClassifier(bootstrap=True,
+        #                             n_estimators=40,
+        #                             criterion='gini',
+        #                             **decision_tree_params),
         'AdaBoost':AdaBoostClassifier(n_estimators=40,
                                       base_estimator=DecisionTreeClassifier(
+                                          criterion='gini',
                                           **decision_tree_params)),
         'GradBoost':GradientBoostingClassifier(n_estimators=40,
                                                criterion='friedman_mse',
@@ -204,6 +211,11 @@ def main(args):
         algnames = list(h5f.keys())
 
     print('running algs',algnames)
+
+    ycount_attrs = [ 'g_(4,(1,(2,3)));',
+                     'g_(4,(3,(1,2)));',
+                     'g_(4,(2,(1,3)));' ] # todo: unhardcode
+
     
     for alg in algnames:
         try:
@@ -221,17 +233,24 @@ def main(args):
                 y_full = pd.DataFrame(np.nan_to_num( ds['y'] ), columns = y_attrs)
                 x_full = pd.DataFrame(np.nan_to_num( ds['x'] ), columns = x_attrs)
                 
-            ycount_attrs = [c for c in y_full.columns if c.startswith('g_(')]
+            #ycount_attrs = [c for c in y_full.columns if c.startswith('g_(')]
             y_frac_mask = y_full[ycount_attrs].sum(1)>args.mintrees
-            print('-----\nalg',alg,'\ny_frac_mask',y_frac_mask.shape,'y_full',y_full.shape)
+            print('-----\nalg',alg,
+                  '\ny_frac_mask',y_frac_mask.shape,
+                  'y_full',y_full.shape,
+                  'x_full',x_full.shape)
+            if len(x_full)==0 or len(y_full)==0:
+                print('no samples to learn for alg',alg)
+                continue
+
             
             # dict of the form: 'conditions':{'feature_name':'>2',...}
             if 'conditions' in args: 
-                for attr,cond in args.conditions.items():
+                for attr,cond in args.conditions.items(): # TODO: rename ebl column
                     code = compile("(y_full['{}']{}).values".format(
                         attr, cond
                     ), '', 'eval')
-                    print('setting',attr,cond,eval(code))
+                    print('setting',attr,cond,'as: ',code)
                     y_frac_mask = np.logical_and(y_frac_mask,eval(code))
 
             if 'features' in args:
@@ -252,10 +271,8 @@ def main(args):
                            / y_full[ycount_attrs].sum(1)
             y_frac = y_frac[y_frac_mask] # TODO: instead of normalize then mask, optimiz
 
-            print('yfmask', y_frac_mask.shape)
             np.save(path.join(args.outdir,alg,'yfmask'), y_frac_mask)
             # classification
-            
 
             if args.balanced:
                 ind = np.argsort(y_frac)
@@ -274,16 +291,16 @@ def main(args):
                 )
                 
             else:
-                X_bin = X
-                y_bin = y_frac < args.ils # ils = 1, no_ils = 0
+                X_bin = X.values
+                y_bin = (y_frac < args.ils ).values # ils = 1, no_ils = 0
                 ils,no_ils = np.where(y_bin), np.where(~y_bin)
                 
             np.savez(path.join(args.outdir,alg,'ybmask'), ils=ils, no_ils=no_ils)
             
             print('\nclassifiers....\n')
             now = time()
-            results_c = train_and_test(X_bin.values,
-                                       y_bin.values,
+            results_c = train_and_test(X_bin,
+                                       y_bin,
                                        classification_learners,
                                        c_metrics,
                                        outfile=path.join(outdir,
@@ -308,7 +325,8 @@ def main(args):
                                        predict=args.predict)
             print('time:',time()-now)
         except  Exception as e:
-            raise e
+	    #raise e
+            print(e)
             continue
     print('finished')
 

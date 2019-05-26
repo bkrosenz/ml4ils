@@ -13,11 +13,12 @@ def diff(s1,s2):
 seq2bytes = lambda seq: bytearray(map(ord, seq))
 
 def pwdist(alignment):
+    """calculate pairwise hamming dist on Bio.Align object"""
     align_length = alignment.get_alignment_length()
     d = {}
     for seqpair in combinations(alignment,2):
         hamming = diff(*map(seq2bytes,seqpair)) / align_length
-        key = ','.join(x.name for x in seqpair)
+        key = ','.join(sorted(x.name for x in seqpair))
         d[key] = hamming
     return d 
 
