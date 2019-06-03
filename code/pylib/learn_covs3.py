@@ -1,4 +1,3 @@
-from sklearn.impute import SimpleImputer
 from sklearn.gaussian_process import GaussianProcessClassifier,GaussianProcessRegressor
 from sklearn.tree import DecisionTreeClassifier,DecisionTreeRegressor,ExtraTreeRegressor,ExtraTreeClassifier
 from sklearn.ensemble import RandomForestClassifier,AdaBoostClassifier,RandomForestClassifier,AdaBoostRegressor,RandomForestRegressor,ExtraTreesClassifier,ExtraTreesRegressor,GradientBoostingRegressor,GradientBoostingClassifier
@@ -8,7 +7,8 @@ from sklearn.svm import SVC
 from sklearn.dummy import DummyClassifier,DummyRegressor
 from sklearn import metrics as met
 from sklearn.model_selection import cross_validate,StratifiedKFold, KFold, cross_val_predict
-from sklearn.pipeline import make_pipeline
+from sklearn.impute import SimpleImputer, MissingIndicator
+from sklearn.pipeline import make_pipeline, make_union
 from sklearn.preprocessing import StandardScaler
 from sklearn.feature_selection import SelectFromModel
 from sklearn.base import clone
@@ -43,7 +43,7 @@ def train_and_test(X,
     feature_weights = { l : [] for l in learners }
 
     scaler = StandardScaler()
-    imputer = SimpleImputer()
+    imputer = SimpleImputer(missing_values=np.nan, strategy='median', fill_value=0)
     if predict:
         preds = dict.fromkeys( learners )
     with open(outfile+'.txt','w') as f, TemporaryDirectory() as tmpdir:
@@ -56,10 +56,11 @@ def train_and_test(X,
             res = []
             true = []
             
-            clf = make_pipeline(imputer,
-                                scaler,
-                                learner,
-                                memory = tmpdir) #SelectFromModel(learner,threshold='mean'))
+            clf = make_pipeline(
+                make_union(imputer, MissingIndicator(features='all'), n_jobs=2),
+                scaler,
+                learner,
+                memory = tmpdir) #SelectFromModel(learner,threshold='mean'))
             print('CV: ',learner_name,learner,'y:',y.shape)
             try:
                 results[learner_name] = cross_validate(clf,
@@ -212,10 +213,10 @@ def main(args):
 
     print('running algs',algnames)
 
-    ycount_attrs = [ 'g_(4,(1,(2,3)));',
-                     'g_(4,(3,(1,2)));',
-                     'g_(4,(2,(1,3)));' ] # todo: unhardcode
-
+    topos = [ '(4,(1,(2,3)));',
+              '(4,(3,(1,2)));',
+              '(4,(2,(1,3)));' ] # todo: unhardcode
+    ycount_attrs = ['g_'+s for s in topos]
     
     for alg in algnames:
         try:
@@ -243,6 +244,11 @@ def main(args):
                 print('no samples to learn for alg',alg)
                 continue
 
+            # TODO: fix the get_summaries script instead
+            for top in topos:
+                tcols = [c for c in x_full.columns if top in c and top !=c]
+                x_full.loc[x_full[top]==0, tcols] = np.nan # no counts for this topo
+
             
             # dict of the form: 'conditions':{'feature_name':'>2',...}
             if 'conditions' in args: 
@@ -257,6 +263,7 @@ def main(args):
                 # allow substring matches
                 x_attrs = [a for a in x_attrs if any(a.startswith(feature) for feature in args.features)]
             X = x_full[x_attrs][y_frac_mask]
+
             y = y_full[ycount_attrs][y_frac_mask] # drop all features
 
             sp_tree_cols = np.array([ycount_attrs[s] for s in y_full['sp_tree_ind'].astype(int)]) # get col of true sp tree; should always be the same

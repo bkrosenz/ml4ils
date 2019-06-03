@@ -86,7 +86,7 @@ for alg in algnames:
         if i<n:
             learner = learners[i]
             try:
-                im = deviations.plot.hexbin(x='ebl', y='ibl', C='learner',ax=ax,
+                im = deviations.plot.hexbin(x='ebl_mean', y='ibl_mean', C=learner, ax=ax,
                                gridsize=40, vmin=vmin, vmax=vmax, 
                                cmap=cmap)
                 # unresolved bug in matplotlib w/ noninteractive plots: https://github.com/matplotlib/matplotlib/issues/5541/

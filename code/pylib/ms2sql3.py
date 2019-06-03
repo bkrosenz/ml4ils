@@ -102,50 +102,53 @@ if __name__=="__main__":
         # for t in metadata.tables.keys():#reversed(metadata.sorted_tables):
         #     print( t )
         
-        try: metadata.drop_all(tables=reversed(metadata.sorted_tables))
-        except: print('no tables to drop:',reversed(metadata.sorted_tables))
+        try:
+            metadata.drop_all(tables=reversed(metadata.sorted_tables))
+        except:
+            print('no tables to drop:',reversed(metadata.sorted_tables))
         
         stree_table = Table('species_trees', metadata,
-                            Column('id', String, primary_key=True),
+                        Column('id', String, primary_key=True),
                             *get_fields()
         )
         
         gtree_table = Table('gene_trees', metadata,
-                            Column('id', String, primary_key=True),
-                            *get_fields(),
+                        Column('id', String, primary_key=True),
+                        *get_fields(),
         )
-
+    
         generated_table = Table('generated', metadata,
-                                Column('id', Integer, primary_key=True), 
-                                Column('sid', None, ForeignKey('species_trees.id')),
-                                Column('gid', None, ForeignKey('gene_trees.id')),
+                            Column('id', Integer, primary_key=True), 
+                            Column('sid', None, ForeignKey('species_trees.id')),
+                            Column('gid', None, ForeignKey('gene_trees.id')),
                                 UniqueConstraint('sid','gid',name='gt_uix') #TODO this assumes Pr(gt1=gt2|st) = 0; only true w/ high precision branch lengths.
-
+                                
         )
         
         inferred_table = Table('inferred', metadata,
-                            Column('true', None, ForeignKey('gene_trees.id')),
-                            Column('inf', None, ForeignKey('gene_trees.id')),
-                            Column('sim_model',String),
-                            Column('sim_engine',String),
-                            Column('infer_model',String),
-                            Column('infer_engine',String),
-                            Column('seq_type',String),
-                            Column('theta',Float),
-                            Column('seq_length',Integer),
-                            PrimaryKeyConstraint(*itree_constraints, name='it_uix')
+                               Column('true', None, ForeignKey('gene_trees.id')),
+                           Column('inf', None, ForeignKey('gene_trees.id')),
+                           Column('sim_model',String),
+                           Column('sim_engine',String),
+                           Column('infer_model',String),
+                           Column('infer_engine',String),
+                           Column('seq_type',String),
+                           Column('theta',Float),
+                           Column('seq_length',Integer),
+                           PrimaryKeyConstraint(*itree_constraints, name='it_uix')
         )
+        
         try:
             metadata.create_all()
             session.commit()
         except exc.IntegrityError as e:
             session.rollback()
             print("Error: tried to create table that already exists",e)
-    else:
-        stree_table = metadata.tables['species_trees']
-        gtree_table = metadata.tables['gene_trees']
-        inferred_table = metadata.tables['inferred']
-        generated_table = metadata.tables['generated']
+        
+    stree_table = metadata.tables['species_trees']
+    gtree_table = metadata.tables['gene_trees']
+    inferred_table = metadata.tables['inferred']
+    generated_table = metadata.tables['generated']
     
    
     gtree_files = glob(path.join(args.indir,'trees/*.rooted.trees'))
@@ -164,19 +167,15 @@ if __name__=="__main__":
         for s in join_times
     )
     st_covs = [ summarize(t) for t in trees ]
-    itree_path = path.join(
-            args.indir,'inferred_trees/*{sim}_{inf}*.rooted.trees'.format(
-                sim = args.sim,
-                inf = args.infer
-            )
+
+    itree_files = [path.join(
+        args.indir, 'inferred_trees/t_{pref}_{sim}_{inf}.raxml.rooted.trees'.format(
+            pref = prefix,
+            sim = args.sim,
+            inf = args.infer
         )
+    ) for prefix in filename_prefixes]
 
-    itree_files = glob( itree_path )
-
-
-    #print(st_covs)
-    #print ('path',itree_path)
-    
     params = dict(
         zip( param_names, (args.sim,
                            args.simengine,
@@ -195,11 +194,18 @@ if __name__=="__main__":
 
     #### main loop
     for stree,s,i in zip(st_covs, gtree_files, itree_files):
-        with open(i) as f:
-            itree_values = [ summarize(tree_config.make_tree(tree)) for tree in f if utils.is_newick(tree) ]
-        with open(s) as f:
-            gtree_values = [ summarize(tree_config.make_tree(tree)) for tree in f if utils.is_newick(tree) ]
-        if not itree_values or not gtree_values: # empty files
+        try:
+            with open(i) as ifile, open(s) as gfile:
+                itree_values = [
+                    summarize(tree_config.make_tree(tree)) for tree in ifile if utils.is_newick(tree)
+                ]
+                gtree_values = [
+                    summarize(tree_config.make_tree(tree)) for tree in gfile if utils.is_newick(tree)
+                ]
+            if len( itree_values ) != len( gtree_values ) : # empty files
+                raise IOError("files of unequal length:",len( itree_values ),len( gtree_values ))
+        except Exception as e:
+            print(i,s,e)
             continue
         for statement in [
             insert(gtree_table).values(

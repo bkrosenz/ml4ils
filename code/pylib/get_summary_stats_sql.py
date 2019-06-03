@@ -109,11 +109,11 @@ def process_df_helper(df, xcols, ycols=None, xtop_col=None, ytop_col=None, topna
 
     return (x,y)
 
-def make_hdf5_file(outpath,algnames,xcols,ycols,overwrite=False):
+def make_hdf5_file(outpath,algnames,xcols,ycols,overwrite=False,append=False):
     if path.isfile(outpath):
         if overwrite:
             remove( outpath )
-        else:
+        elif not append:
             raise IOError('file exists:',outpath)
         
     n_algs = len(algnames)
@@ -134,7 +134,6 @@ def main(args):
               
     #### start processing
     algnames =  [a1+'_'+a2 for a1, a2 in utils.product(*[('wag','lg')]*2)]
-    
     # col names for sql db
     cov_cols = next(tree_config.cov_iter(range(1,tree_config.subtree_sizes[0]+1)))
     numeric_cols = cov_cols + ['vmr','length']
@@ -160,7 +159,7 @@ def main(args):
 
     outpath=path.join(args.outdir,args.outfile)
     #TODO: these are misnamed (std's < 0). fix it.
-    hdf5_store = make_hdf5_file(outpath,algnames,xcols,ycols,args.overwrite)
+    hdf5_store = make_hdf5_file(outpath,algnames,xcols,ycols,args.overwrite,args.append)
     
     print('hdf5 shapes:',hdf5_store.shapes,tree_config.subtree_sizes, hdf5_store.dtypes)
 
@@ -271,6 +270,7 @@ if __name__=="__main__":
                         default=1000)
     parser.add_argument('--verbose',action='store_true',help='debug')
     parser.add_argument('--overwrite',action='store_true',help='overwrite')
+    parser.add_argument('--append',action='store_true',help='append to existing hdf file')
     parser.add_argument('--threads','-t',type=int,help='num threads per proc',default=4)
     parser.add_argument('--tol', default=2,
                         help='''observed frequencies must be within "tol" \in [0,1] of each other

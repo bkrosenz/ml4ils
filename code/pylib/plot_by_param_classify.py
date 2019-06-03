@@ -5,7 +5,7 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
-#from sys import argv
+from sys import argv
 from os import path
 plt.ion()
 
