@@ -8,10 +8,7 @@ from sqlalchemy.sql.expression import func
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.schema import PrimaryKeyConstraint,UniqueConstraint
 import time
-import matplotlib
-matplotlib.use('Agg')
 from itertools import chain,islice
-import matplotlib.pyplot as plt
 from collections import defaultdict,Counter
 from io import StringIO
 from functools import partial,reduce
@@ -92,6 +89,9 @@ def process_df_helper(df, xcols, ycols=None, xtop_col=None, ytop_col=None, topna
                                  x[inds, :])
             utils.summarize_into(df[ycols][df[ytop_col]==top_name],
                                  y[inds, :])
+            m=np.min(y[inds, :])
+            if m<0:
+                print('min:', m)
 #        print(x.shape,len(xtops))
         x, y=x.flatten('F'), y.flatten('F') # default is row-major
         x,y = np.concatenate((x,xtops)), np.concatenate((y,ytops)) 
@@ -142,9 +142,12 @@ def main(args):
     stree_cols =['ebl','ibl','s_length']
     sp_tree = '(4,(3,(1,2)));' # TODO : dont hardcode
     
-    tops = list( tree_config.nw_iter() ) # NOTE: MUST SORT, ow will not match order of pd.Series.value_counts
+    # NOTE: MUST SORT, ow will not match order of pd.Series.value_counts
+    tops = list( tree_config.nw_iter() )
+    
 
-    summary_strs = lambda pref: [pref+'_'+summary+'_'+top for top in tops for summary in utils.summaries]
+    summary_strs = lambda pref: [pref+'_'+summary+'_'+top \
+                                 for top in tops for summary in utils.summaries]
 
     summaries = reduce(add,map(summary_strs,numeric_cols))
     
@@ -163,7 +166,8 @@ def main(args):
     
     print('hdf5 shapes:',hdf5_store.shapes,tree_config.subtree_sizes, hdf5_store.dtypes)
 
-    engine = create_engine('postgresql://bkrosenz@localhost/sim4',
+    
+    engine = create_engine('postgresql://bkrosenz@localhost/'+args.db,
                            pool_size=args.procs, max_overflow=0
     ) #sqlite:///%s'%args.out)
     metadata = MetaData(bind=engine)
@@ -189,7 +193,7 @@ def main(args):
 
             # q = session.query(*stree_cols)
             # s_stats = pd.read_sql(
-            #     q.statement, q.session.bind, index_col='sid'
+            #     q.statement, q.session.bind, index_col='sid' 
             # ).loc[keep_idx].distinct('sid').values
             # print(s_stats.shape,s_stats)
             # get other stats
@@ -268,13 +272,23 @@ if __name__=="__main__":
                         type=int,
                         help='num genes in each dataset',
                         default=1000)
-    parser.add_argument('--verbose',action='store_true',help='debug')
-    parser.add_argument('--overwrite',action='store_true',help='overwrite')
-    parser.add_argument('--append',action='store_true',help='append to existing hdf file')
-    parser.add_argument('--threads','-t',type=int,help='num threads per proc',default=4)
+    parser.add_argument('--testonly',
+                        action='store_true',
+                        help='''only write test data (no "true" attributes). not implemented.'''
+    )
+    parser.add_argument('--verbose',
+                        action='store_true',help='debug')
+    parser.add_argument('--overwrite',
+                        action='store_true',help='overwrite')
+    parser.add_argument('--append',
+                        action='store_true',help='append to existing hdf file')
+    parser.add_argument('--threads','-t',
+                        type=int,help='num threads per proc',default=4)
     parser.add_argument('--tol', default=2,
-                        help='''observed frequencies must be within "tol" \in [0,1] of each other
-                        to be considered discordant''')
+                        help='''observed frequencies must be within
+                        "tol" \in [0,1] of each other
+                        to be considered discordant'''
+    )
     
     #TODO: make these 2 into a mutually exclusive required group
     parser.add_argument('--outdir',
@@ -298,6 +312,9 @@ if __name__=="__main__":
                         help='taxa names - list or filename')
     parser.add_argument('--outgroup',
                         help='taxa names - list or filename')
+    parser.add_argument('--db',
+                        default='sim4',
+                        help='database name')
 
     args = parser.parse_args()
     print( 'Arguments: ',args)

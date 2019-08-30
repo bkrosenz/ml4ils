@@ -1,0 +1,26 @@
+#!/bin/bash
+#PBS -k o
+#PBS -M bkrosenz@indiana.edu
+#PBS -l vmem=96gb,nodes=1:ppn=12,walltime=6:0:0 
+#PBS -m abe
+#PBS -N sqlviews
+#PBS -d /N/dc2/projects/bkrosenz/deep_ils/pbs
+
+source ~/.bash_profile;
+module load anaconda gsl gnu-parallel
+
+source activate bio3.6
+
+WORKING_DIR=/N/dc2/projects/bkrosenz/deep_ils/code/pylib
+
+cd $WORKING_DIR;
+
+pwd;
+
+pg_ctl -o "-S 32MB -c effective_cache_size=32GB -c max_parallel_workers_per_gather=12 -c max_worker_processes=12 -c max_parallel_workers=12 -c max_wal_size=4GB -c wal_writer_delay=1000ms" -D /N/dc2/projects/bkrosenz/databases/postgres \
+       -l logfile.updatedb start
+
+echo started db...;
+psql -d sim4 -a -f create_views_recomb.sql &
+psql -d sim4 -a -f create_views.sql
+echo finished creating views;

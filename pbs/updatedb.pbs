@@ -1,24 +1,21 @@
-#!/bin/bash
+#OA!/bin/bash
 #PBS -k o
 #PBS -M bkrosenz@indiana.edu
-#PBS -l vmem=32gb,nodes=1:ppn=4,walltime=3:00:0
+#PBS -l vmem=96gb,nodes=1:ppn=12,walltime=18:0:0 
 #PBS -m abe
 #PBS -N dbupdate
 #PBS -d /N/dc2/projects/bkrosenz/deep_ils/pbs
 
-N=4
-
+NPROCS=12
 source ~/.bash_profile;
 module load anaconda gsl gnu-parallel
 
 source activate bio3.6
 
-OUTDIR=/N/dc2/projects/bkrosenz/deep_ils/sims/seqgen-aa-1000bp-theta0.01
 WORKING_DIR=/N/dc2/projects/bkrosenz/deep_ils/code/pylib
 
 ### concatenate all the leftover raxml files
 
-# cd $OUTDIR;
 # find raxml -name 'RAxML_bestTree.*.raxml' |perl -pe 's/_[a-z]+_PROTCAT(WAG|LG).raxml/ PROTCAT$1/'|sort|uniq > raxml.txt
 
 # concatenate(){
@@ -37,25 +34,42 @@ WORKING_DIR=/N/dc2/projects/bkrosenz/deep_ils/code/pylib
 cd $WORKING_DIR;
 
 pwd;
-bash rooted.sh
-echo finished rooting trees...;
-postgres -D /N/dc2/projects/bkrosenz/deep_ils/databases/pgsql/data >logfile 2>&1 &
+
+#bash rooted.sh $N;
+#echo finished rooting trees...;
+#-o "-S 8GB -c shared_buffers=16GB -c max_worker_processes = 16 -c max_parallel_workers = 12 -c max_wal_size = 16GB -c work_mem = 4GB " \
+
+pg_ctl -o "-S 32MB -c effective_io_concurrency=4 -c effective_cache_size=32GB -c max_parallel_workers_per_gather=12 -c max_worker_processes=12 -c max_parallel_workers=12 -c max_wal_size=4GB -c wal_writer_delay=1000ms" -D /N/dc2/projects/bkrosenz/databases/postgres -l logfile.updatedb start
+
+#postgres -D /N/dc2/projects/bkrosenz/deep_ils/databases/postgres >logfile.updatedb 2>&1 &
+
 echo started db...;
-bash test_sql.sh
+
+
+# truncate all and rewrite
+echo truncating...
+
+psql -d sim4 -a -f truncate.sql # wait
+
+psql -d sim4 -a -f create_views.sql
+psql -d sim4 -a -f create_views_recomb.sql
+
+bash update_sql.sh 12 
+bash update_sql_recomb.sh 12  # wait
+#wait %1 %2
+
 echo updated postgresql db...
-bash test_summarize_sql.sh 250 $N
-bash test_summarize_sql.sh 500 $N
-bash test_summarize_sql.sh 1000 $N
-bash test_summarize_sql.sh 2000 $N
-echo finished summarizing...
 
-cd /N/dc2/projects/bkrosenz/deep_ils/pbs;
-qsub learn_covs_parallel.pbs
+echo created views...
+psql -d sim4 -a -f refresh_views.sql
+echo vacuumed...
 
-# for resdir in `find /N/dc2/projects/bkrosenz/deep_ils/results/ms_learned -name 'theta*' -type d`;
-# do
-#     bash test_learn_config.sh $resdir $N;
-#     echo finished $resdir;
-#     bash plot_all.sh $N;
-#     echo finished plotting  $resdir;
-# done
+# dir shouldn't exist yet, but just in case...
+backup_dir=/N/dc2/projects/bkrosenz/ml4ils/databases/sim4.postgres.backup.dir.after.$$
+if [ -d $backup_dir ]; then rm -rf $backup_dir; fi
+pg_dump -j12 -Fd sim4 -Z9 -f$backup_dir 
+
+echo wrote backup file to $backup_dir;
+
+
+#qsub ../../pbs/summarize.pbs

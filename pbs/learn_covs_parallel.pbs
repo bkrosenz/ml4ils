@@ -1,13 +1,13 @@
 #!/bin/bash
 #PBS -k o
 #PBS -M bkrosenz@indiana.edu
-#PBS -l vmem=96gb,nodes=1:ppn=8,walltime=12:0:0
+#PBS -l vmem=128gb,nodes=1:ppn=12,walltime=8:0:0
 #PBS -m abe
 #PBS -N cupdate-par
 #PBS -d /N/dc2/projects/bkrosenz/deep_ils/pbs
 
 n_jobs=4
-n_crossval=2
+n_crossval=4
 N=$(($n_jobs * $n_crossval))
 export n_jobs
 export n_crossval
@@ -18,11 +18,17 @@ module load anaconda gsl gnu-parallel
 source activate bio3.6
 
 WORKING_DIR=/N/dc2/projects/bkrosenz/deep_ils/code/pylib
-
+DATADIR=/N/dc2/projects/bkrosenz/deep_ils/results/ms_learned
 cd $WORKING_DIR;
 pwd;
+date;
+parallel --shuf -j$n_jobs bash test_learn_config.sh $DATADIR/{} $n_crossval :::: $DATADIR/dirnames.txt;
+date;
 
-find /N/dc2/projects/bkrosenz/deep_ils/results/ms_learned -name 'theta*' -type d | parallel -j$n_jobs bash test_learn_config.sh {} $n_crossval;
-echo finished training...;
-find /N/dc2/projects/bkrosenz/deep_ils/results/ms_learned -name 'theta*' -type d | parallel -j$N bash plot_all.sh {} ;
-echo finished plotting;
+#find /N/dc2/projects/bkrosenz/deep_ils/results/ms_learned -name 'theta*' -type d | parallel -j$n_jobs bash test_learn_config.sh {} $n_crossval;
+#echo finished training...;
+
+qsub ../../pbs/plot_covs_parallel.pbs
+ 
+#find /N/dc2/projects/bkrosenz/deep_ils/results/ms_learned -name 'theta*' -type d | parallel -j$N bash plot_all.sh {} ;
+#echo finished plotting;

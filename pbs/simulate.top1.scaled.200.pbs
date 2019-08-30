@@ -1,0 +1,37 @@
+#!/bin/bash
+#PBS -k o
+#PBS -M bkrosenz@indiana.edu
+#PBS -l vmem=96gb,nodes=1:ppn=12,walltime=22:0:0
+#PBS -m abe
+#PBS -N top1.150.200bp.a
+#PBS -d /N/dc2/projects/bkrosenz/deep_ils/pbs
+
+N=16
+
+source ~/.bash_profile;
+source activate bio3.6
+
+module load gsl gnu-parallel
+
+WORKING_DIR=/N/dc2/projects/bkrosenz/deep_ils
+
+cd $WORKING_DIR;
+pwd;
+
+scale=0.01 # theta for seqgen
+outdir=/N/dc2/projects/bkrosenz/deep_ils/sims/seqgen-aa-theta$scale
+
+echo started at `date`
+# for length in 500 200 100; do
+#     parallel -j $N echo ./code/simulate/simulate.top1.AA.len.sh {} ::: `seq 30 10 300` ::: \
+#              0.01 `seq 0.02 0.02 0.2` `seq 0.025 0.025 0.2` `seq 0.25 0.25 2`  `seq 2.5 0.5 20` ::: \
+#              20 ::: $outdir ::: raxmlHPC-AVX ::: $scale ::: $length;
+#     echo finished $length at `date`
+# done
+
+length=200;
+parallel --shuf -j$N ./code/simulate/simulate.top1.AA.len.sh {} ::: `seq 30 10 400` ::: \
+         0.01 `seq 0.02 0.02 0.2` `seq 0.025 0.025 0.2` `seq 0.25 0.25 2`  `seq 2.5 0.5 20` ::: \
+         20 ::: $outdir ::: raxmlHPC-AVX ::: $scale ::: $length;
+echo finished $length at `date`
+#qsub ../../root_all.pbs

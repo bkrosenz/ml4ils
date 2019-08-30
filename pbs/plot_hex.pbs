@@ -16,4 +16,5 @@ source activate bio3.6
 
 WORKING_DIR=/N/dc2/projects/bkrosenz/deep_ils/code/pylib
 cd $WORKING_DIR
-find /N/dc2/projects/bkrosenz/deep_ils/results/ms_learned -name 'theta*' -type d | parallel -j$N python plot_by_param.py {}
+find /N/dc2/projects/bkrosenz/deep_ils/results/ms_learned -name 'theta*ub*' -type d | parallel -j$N python plot_by_param.py {}
+find /N/dc2/projects/bkrosenz/deep_ils/results/ms_learned -name 'theta*ub*' -type d | parallel -j$N python plot_by_param_classify.py {}

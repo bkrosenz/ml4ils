@@ -1,0 +1,25 @@
+#!/bin/bash
+#PBS -k o
+#PBS -M bkrosenz@indiana.edu
+#PBS -l vmem=80gb,nodes=1:ppn=12,walltime=12:0:0
+#PBS -m abe
+#PBS -N meta-update
+#PBS -d /N/dc2/projects/bkrosenz/deep_ils/pbs
+
+N=8
+
+module load gsl gnu-parallel
+
+source ~/.bash_profile;
+source activate bio3.6
+
+WORKING_DIR=/N/dc2/projects/bkrosenz/deep_ils/code/pylib
+cd $WORKING_DIR;
+
+pg_ctl -o "-S 32MB -c effective_io_concurrency=4 -c effective_cache_size=32GB -c max_parallel_workers_per_gather=12 -c max_worker_processes=12 -c max_parallel_workers=12 -c max_wal_size=4GB -c wal_writer_delay=1000ms" -D /N/dc2/projects/bkrosenz/databases/postgres -l logfile.updatedb start
+
+#pg_ctl -D /N/dc2/projects/bkrosenz/deep_ils/databases/pgsql/data -l logfile.updatedb start
+
+echo started at `date`
+bash metazoa2sql.sh $N
+echo finished at `date`

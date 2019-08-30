@@ -1,7 +1,8 @@
-#source activate bio3.6
-#
 #if test `find "logfile" -mmin +10` ;then postgres -D /N/dc2/projects/bkrosenz/deep_ils/databases/pgsql/data >logfile 2>&1 & fi;
-sleep 10s
+#sleep 10s
+
+# pg_ctl -D /N/dc2/projects/bkrosenz/deep_ils/databases/pgsql/data -l logfile start
+
 
 #
 #psql -d sim4
@@ -13,10 +14,13 @@ sleep 10s
 # pg_dump -j4 -Fd -Z9 -f/N/dc2/projects/bkrosenz/ml4ils/databases/sim4.postgres.backup.old sim4
 # echo finished dumping db...
 
-parallel -j4 python ms2sql3.py --sim {1} --infer {2} --simengine seqgen --infengine raxml --seqtype aa --seqlength 1000 --theta 0.01 \
-         --out /N/dc2/projects/bkrosenz/deep_ils/databases/pgsql/data \
-         -i /N/dc2/projects/bkrosenz/deep_ils/sims/seqgen-aa-1000bp-theta0.01/ ::: LG WAG ::: PROTCATLG PROTCATWAG;
-echo finished updating db...
+for length in 1000 500 200 100; do
+    parallel -j4 python ms2sql3.py --sim {1} --infer {2} --simengine seqgen --infengine raxml \
+             --seqtype aa --seqlength $length --theta 0.01 \
+         -i /N/dc2/projects/bkrosenz/deep_ils/sims/seqgen-aa-theta0.01/${length}bp --overwrite \
+         ::: LG WAG ::: PROTCATLG PROTCATWAG;
+    echo finished updating db $length...
+done
 
 psql -d sim4 -a -f create_views.sql
 psql -d sim4 -a -f refresh_views.sql

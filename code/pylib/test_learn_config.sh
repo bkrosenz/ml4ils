@@ -8,4 +8,5 @@ echo processing dir: $1...;
 PYTHONWARNINGS=ignore python learn_covs3.py --procs $2 \
        --outdir $1 \
        --config $1/config.json \
-       --predict
+       --predict \
+       --classify

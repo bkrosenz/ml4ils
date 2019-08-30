@@ -4,6 +4,7 @@ import sqlalchemy as sa
 from sqlalchemy.sql.expression import func
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.engine import reflection
 from sqlalchemy.schema import PrimaryKeyConstraint,UniqueConstraint
 
 import subprocess, sqlite3, argparse, sys, re, shutil
@@ -22,16 +23,14 @@ from time import time
 #from Bio import Phylo, AlignIO
 import numpy as np
 
-VMR = lambda x: np.nanvar(x) / np.nanmean(x) # aka index of dispersion
-total_length = lambda x: np.sum(x)
 
 def summarize(t):
     covs = tree_config.get_cov(t)
     return {'id':utils.nwstr(t),
             **covs,
             'topology':utils.nwstr(t,format=9),
-            'vmr':VMR(list(covs.values())),
-            'length':total_length(covs[tip] for tip in utils.tips(t.get_leaf_names()))
+            'vmr':utils.VMR(list(covs.values())),
+            'length':utils.total_length(covs[tip] for tip in utils.tips(t.get_leaf_names()))
     }
 
 if __name__=="__main__":
@@ -59,10 +58,10 @@ if __name__=="__main__":
                         help="debug (verbose) mode.")
     parser.add_argument('--overwrite', action='store_true',
                         help="overwrite existing tables.  WARNING: doesn't work yet.")
-    parser.add_argument('--out','-o',type=str,
-                        help='output database filename',required=True)
     parser.add_argument('--indir','-i',type=str,
-                        help='input database filename',required=True)
+                        help='''input directory. must have trees/ and inferred_trees/ subdirectories 
+                        with files *.rooted.trees and t_{pref}_{sim}_{inf}.raxml.rooted.trees''',
+                        required=True)
 
     args = parser.parse_args()
 
@@ -71,15 +70,15 @@ if __name__=="__main__":
     m = re.compile('t_(.*).rooted.trees')
 
     args.outgroup = 4
-    leafnames = range(1,5)
+    leafnames = range(1,5) # todo: unhardcode
     tree_config = utils.TreeConfig(leafnames=leafnames,
                                    outgroup=args.outgroup,
                                    subtree_sizes=[4])
     
     dbfile = ''
-    engine = create_engine('postgresql://bkrosenz@localhost/sim4') #sqlite:///%s'%args.out)
+    engine = create_engine('postgresql://bkrosenz@localhost/sim4') 
     metadata = MetaData(bind=engine)
-    metadata.reflect(views=True)
+    metadata.reflect(views=False) # NOTE: ignore the views here, but we'll need them when reading from db
 
     conn = engine.connect()        
     Session = sessionmaker(bind=engine)
@@ -87,7 +86,8 @@ if __name__=="__main__":
 
     cov_labels = next(tree_config.cov_iter(range(1,tree_config.subtree_sizes[0]+1)))
     field_names = cov_labels + ['vmr','length']
-    param_names = ['sim_model','sim_engine','infer_model','infer_engine','seq_type','seq_length','theta']
+    param_names = ['sim_model','sim_engine','infer_model',
+                   'infer_engine','seq_type','seq_length','theta']
     itree_constraints = ['true','inf']+param_names
     get_fields = lambda: [Column(fn,Float) for fn in field_names] + [Column('topology',String)]
 
@@ -101,42 +101,49 @@ if __name__=="__main__":
         #     t.drop()#metadata.tables[t]) #(
         # for t in metadata.tables.keys():#reversed(metadata.sorted_tables):
         #     print( t )
+        # insp = reflection.Inspector.from_engine(engine)
+        # for t in insp.get_table_names():
+        #     session.execute('''TRUNCATE TABLE {}'''.format(t))
+        # session.commit()
+        for t in reversed(metadata.sorted_tables):
+            session.execute('''TRUNCATE TABLE {}'''.format(t.name))
+        session.commit()
+            
+        # try:
+        #     metadata.drop_all(tables=reversed(metadata.sorted_tables))
+        # except:
+        #     print('no tables to drop:',reversed(metadata.sorted_tables))
         
-        try:
-            metadata.drop_all(tables=reversed(metadata.sorted_tables))
-        except:
-            print('no tables to drop:',reversed(metadata.sorted_tables))
+        # stree_table = Table('species_trees', metadata,
+        #                 Column('id', String, primary_key=True),
+        #                     *get_fields()
+        # )
         
-        stree_table = Table('species_trees', metadata,
-                        Column('id', String, primary_key=True),
-                            *get_fields()
-        )
-        
-        gtree_table = Table('gene_trees', metadata,
-                        Column('id', String, primary_key=True),
-                        *get_fields(),
-        )
+        # gtree_table = Table('gene_trees', metadata,
+        #                 Column('id', String, primary_key=True),
+        #                 *get_fields(),
+        # )
     
-        generated_table = Table('generated', metadata,
-                            Column('id', Integer, primary_key=True), 
-                            Column('sid', None, ForeignKey('species_trees.id')),
-                            Column('gid', None, ForeignKey('gene_trees.id')),
-                                UniqueConstraint('sid','gid',name='gt_uix') #TODO this assumes Pr(gt1=gt2|st) = 0; only true w/ high precision branch lengths.
+        # generated_table = Table('generated', metadata,
+        #                     Column('id', Integer, primary_key=True), 
+        #                     Column('sid', None, ForeignKey('species_trees.id')),
+        #                     Column('gid', None, ForeignKey('gene_trees.id')),
+        #                         UniqueConstraint('sid','gid',name='gt_uix') #TODO this assumes Pr(gt1=gt2|st) = 0; only true w/ high precision branch lengths.
                                 
-        )
+        # )
         
-        inferred_table = Table('inferred', metadata,
-                               Column('true', None, ForeignKey('gene_trees.id')),
-                           Column('inf', None, ForeignKey('gene_trees.id')),
-                           Column('sim_model',String),
-                           Column('sim_engine',String),
-                           Column('infer_model',String),
-                           Column('infer_engine',String),
-                           Column('seq_type',String),
-                           Column('theta',Float),
-                           Column('seq_length',Integer),
-                           PrimaryKeyConstraint(*itree_constraints, name='it_uix')
-        )
+        # inferred_table = Table('inferred', metadata,
+        #                        Column('true', None, ForeignKey('gene_trees.id')),
+        #                        Column('inf', None, ForeignKey('gene_trees.id')),
+        #                        Column('sim_model',String),
+        #                        Column('sim_engine',String),
+        #                        Column('infer_model',String),
+        #                        Column('infer_engine',String),
+        #                        Column('seq_type',String),
+        #                        Column('theta',Float),
+        #                        Column('seq_length',Integer),
+        #                        PrimaryKeyConstraint(*itree_constraints, name='it_uix')
+        # )
         
         try:
             metadata.create_all()
@@ -230,9 +237,11 @@ if __name__=="__main__":
                 [ { 'sid':stree['id'],
                     'gid':gtree['id'] }
                   for gtree in gtree_values ]
-            ).on_conflict_do_nothing(
-                constraint = 'gt_uix'
             ) ]:
+            # NOTE: removed .on_conflict_do_nothing(
+            #     constraint = 'gt_uix'
+            # )
+            # from generated_table, since a sp tree can gen the same gt (w/low proba) multiple times
             conn.execute(statement)
 
     session.close()

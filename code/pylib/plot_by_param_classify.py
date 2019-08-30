@@ -7,6 +7,9 @@ import pandas as pd
 import numpy as np
 from sys import argv
 from os import path
+import matplotlib.ticker as ticker
+ticks = ticker.FuncFormatter(lambda x, pos: r'$10^{%d}$'%x) #r'$%.3f$'%10**x) #
+
 plt.ion()
 
 def add_common_labels(fig, xlab, ylab):
@@ -18,7 +21,7 @@ def add_common_labels(fig, xlab, ylab):
     plt.ylabel(ylab)
     
 
-respath = len(argv)>1 and argv[1] or None
+respath = len(argv)>1 and argv[1] or input("enter path to output dir: ")
 
 with open(path.join(respath,'config.json')) as confile:
     config = json.load(confile)
@@ -63,20 +66,25 @@ for alg in algnames: #['lg_wag'] :#
     # print('corr',
     #       y_full.groupby(['ebl_mean', 'ibl_mean'])[learners].corrwith(y_full.y_true)) #,method='spearman')
 
-    print(y_attrs,'\ncols old',y_full.columns)
+#    print(y_attrs,'\ncols old',y_full.columns)
     y_full.columns=[s if s in count_cols else rx.sub('',s) for s in y_full.columns]
-    print('cols new',y_full.columns)
+#    print('cols new',y_full.columns)
 
     y_full['frac'] = y_full[count_cols[1]]/y_full[count_cols].sum(1)
     y_full['bin']=y_full.frac < config['ils']
     misclass=pd.DataFrame({c : (y_full[c].round()!=y_full.bin)  for c in learners}) 
     #    deviations = y_full[learners].apply(lambda x:np.abs(x-y_full.y_true))
 
-    misclass[['ebl', 'ibl']] = y_full[['ebl_median', 'ibl_median']]
+    misclass['ebl'], misclass['log_ibl'] = y_full['ebl_median'], np.log10( y_full['ibl_median'] )
+    ebl = misclass['ebl']
+    ibl = misclass['log_ibl']
+
+#    misclass[['ebl', 'ibl']] = y_full[['ebl_median', 'ibl_median']]
+
 
     ncols=3
     nrows=math.ceil(len(learners)/ncols)
-    vmin,vmax = 0, .5
+    vmin,vmax = 1e-6, .5
     cmap=plt.cm.Blues
     norm = matplotlib.colors.Normalize(vmin=vmin,vmax=vmax)
     fig, axs = plt.subplots(ncols=ncols,
@@ -85,27 +93,27 @@ for alg in algnames: #['lg_wag'] :#
                             sharey=True,
                             figsize=(6,6))
     cbar_ax = fig.add_axes([.91, .3, .03, .4])
-    ebl = misclass['ebl']
-    ibl = misclass['ibl']
     n = len(learners)
+    
     for i,ax in enumerate(axs.ravel()):
         if i<n:
             learner = learners[i]
             im = ax.hexbin(x=ebl, y=ibl, C=misclass[learner],
                            gridsize=40, vmin=vmin, vmax=vmax,
-                           yscale='log',
+#                           yscale='log',
                            cmap=cmap)
+            ax.yaxis.set_major_formatter(ticks)
             ax.set_title(learner)
             ax.set_facecolor("lightslategray")
             ax.xaxis.label.set_visible(False)
             ax.yaxis.label.set_visible(False)
         else:
             fig.delaxes(ax)
-    fig.colorbar( im, cax=cbar_ax)
+    fig.colorbar( mappable=im, cax=cbar_ax)
     add_common_labels(fig,
                       xlab=r'External Branch Length',
                       ylab=r'Internal Branch Length')
     fig.suptitle('Mean Misclassification Error',size=15)
-    plt.tight_layout(rect=[0,.03,.9,.95])
+    plt.tight_layout(pad=.3, rect=[0,.03,.9,.95])
     plt.savefig(path.join(respath,alg,'hexplot.classify.%s.png'%alg))
     plt.clf()

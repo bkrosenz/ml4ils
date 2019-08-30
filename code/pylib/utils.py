@@ -32,12 +32,17 @@ leaves2cov = lambda leaf1,leaf2: ':'.join((leaf1,leaf2))
 pair2cov = lambda pair: ':'.join(map(str,pair))
 triplet2nw = lambda a,b,c: '(%s,(%s,%s);'%(*sorted((a,b)),c)
 
+def invert(f):
+    """inverts a 1-to-1 dict/ordered dict or other"""
+    return f.__class__(map(reversed, f.items()))
+    
 def is_newick(tree):
     "necess but not suff test for newickness"
     t = tree.strip()
     return t.startswith('(') and t.endswith(';')
 
 def tips(leaves):
+    """['a','b','c'] -> ['a:a','b:b','c:c']"""
     if type(leaves)==str:
         return [pair2cov((c,c)) for c in leaves.split(',')]
     else:
@@ -104,13 +109,20 @@ def nwstr(t,format=1):
     100 topology only ((,),(,));"""
     return standardize(t).write(format=format)
 
-def subtree(parent_tree, taxa):
-    """returns n-taxon topologically invariant subtree.  sorted in lexicographic->ladderized order: ((a,b),c);"""    
+def subtree(parent_tree, taxa, newick=True, rename=None):
+    """default: returns n-taxon topologically invariant subtree in newick fmt.  
+    sorted in lexicographic->ladderized order: ((a,b),c);"""    
     if not all(x in parent_tree for x in taxa):
         return None # not in this tree
-    t = parent_tree.copy()
+    t = parent_tree.copy("newick")
     t.prune(taxa)
-    return standardize(t).write(format=9)
+    if rename is not None:
+        for n in t:
+            if n.name in rename:
+                n.name = rename[n.name]
+    if newick:
+        return standardize(t).write(format=9)
+    return t
 
 class TreeConfig:
     def __init__(self, leafnames=None,
@@ -144,15 +156,18 @@ class TreeConfig:
         """makes ete3 tree from newick string, sets outgroup if it is present. 
         If single_copy=False, keep the highest-index gene from each family,
         otherwise ignore families with duplicates"""
-        try:
-            t = Tree(nwstr) #trailing_str.sub('',nwstr))
-        except Exception as e:
-            print('couldn not create tree from',nwstr)
-            raise e
+        if isinstance(nwstr,Tree):
+            t=nwstr
+        else:
+            try:
+                t = Tree(nwstr) #trailing_str.sub('',nwstr))
+            except Exception as e:
+                print('couldn not create tree from',nwstr)
+                raise e
 
         if not single_copy:
             gene_copies = {m.search(k.name).group(1):k for k in t.get_leaves()}
-            t.prune(gene_copies.values()) # keep 1st copy
+            t.prune(gene_copies.values()) # keep 1st copy.  TODO: make this customizable
         elif len(set(trailing_str.sub('',leaf.name) for leaf in t)) < len(t):
             # ignore multi-copy genes
             return None
@@ -168,6 +183,7 @@ class TreeConfig:
             pass 
         
         return t
+
 
     def get_cov(self,t):
         """return phylogenetic covariance dict; cov over all tips, including duplicate genes"""

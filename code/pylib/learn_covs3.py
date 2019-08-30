@@ -118,39 +118,52 @@ def main(args):
         'max_depth':4,
         'min_samples_leaf':1
     }
-    
-    classification_learners = {
-        'Random':DummyClassifier('stratified'),
-        'Trivial':DummyClassifier('prior'), # same as most_frequent, except predict_proba returns the class prior.
-        # 'RF':RandomForestClassifier(bootstrap=True,
-        #                             n_estimators=40,
-        #                             criterion='gini',
-        #                             **decision_tree_params),
+
+    if args.classify:
+        classification_learners = {
+            'Random':DummyClassifier('stratified'),
+            'Trivial':DummyClassifier('prior'), # same as most_frequent, except predict_proba returns the class prior.
+            # 'RF':RandomForestClassifier(bootstrap=True,
+            #                             n_estimators=40,
+            #                             criterion='gini',
+            #                             **decision_tree_params),
         'AdaBoost':AdaBoostClassifier(n_estimators=40,
                                       base_estimator=DecisionTreeClassifier(
                                           criterion='gini',
                                           **decision_tree_params)),
-        'GradBoost':GradientBoostingClassifier(n_estimators=40,
-                                               criterion='friedman_mse',
-                                               **decision_tree_params),
-        'LogisticReg':LogisticRegressionCV(Cs=5,
-                                           penalty='l1',
-                                           class_weight = 'balanced',
-                                           solver='saga', #NOTE: saga is fast only if data has been scaled
-                                           max_iter=100,
-                                           tol=1e-4,
-                                           cv=3),
-        'MLP-big':MLPClassifier(solver='sgd',
-                                batch_size=50,
-                                learning_rate='adaptive',
-                                learning_rate_init=0.01,
-                                momentum=0.8,
-                                nesterovs_momentum=True,
-                                hidden_layer_sizes=(20,20,20,20),
-                                tol=1e-4,
-                                max_iter=500,
-                                shuffle=True)
-    }
+            'GradBoost':GradientBoostingClassifier(n_estimators=40,
+                                                   criterion='friedman_mse',
+                                                   **decision_tree_params),
+            'LogisticReg':LogisticRegressionCV(Cs=5,
+                                               penalty='l1',
+                                               class_weight = 'balanced',
+                                               solver='saga', #NOTE: saga is fast only if data has been scaled
+                                               max_iter=500,
+                                               tol=1e-4,
+                                               cv=3),
+            'MLP-big':MLPClassifier(solver='sgd',
+                                    batch_size=50,
+                                    learning_rate='adaptive',
+                                    learning_rate_init=0.001,
+                                    momentum=0.8,
+                                    nesterovs_momentum=True,
+                                    hidden_layer_sizes=(20,20,20,20),
+                                    tol=1e-4,
+                                    max_iter=1000,
+                                    shuffle=True)
+        }
+
+        c_metrics = {'Acc':met.accuracy_score,
+                     'F1':met.f1_score,
+                     'Prec':met.precision_score,
+                     'Recall':met.recall_score,
+                     'MCC':met.matthews_corrcoef
+        }
+        
+
+        # cv requires scoring fn
+        for m in c_metrics: c_metrics[m] = met.make_scorer(c_metrics[m])
+
 
     ###### REGRESSION #######
     # 'criterion':'mse', # by default
@@ -182,30 +195,20 @@ def main(args):
                                hidden_layer_sizes=(20,20,20,20),
                                tol=1e-4,
                                early_stopping=False,
-                               max_iter=500,
+                               max_iter=1000,
                                shuffle=True)
     }
+
+    params =  [args,str(regression_learners), str(classification_learners)] if args.classify \
+              else [args,str(regression_learners)] 
+    dump( params, path.join(args.outdir,'arguments.pkl.gz') )
+
     
-    
-    c_metrics = {'Acc':met.accuracy_score,
-                 'F1':met.f1_score,
-                 'Prec':met.precision_score,
-                 'Recall':met.recall_score,
-                 'MCC':met.matthews_corrcoef
-    }
-
-
-    # cv requires scoring fn
-    for m in c_metrics: c_metrics[m] = met.make_scorer(c_metrics[m])
-
     r_metrics = {'MSE':met.mean_squared_error,
                  'MAE':met.mean_absolute_error,
                  'EV':met.explained_variance_score
     }
     for m in r_metrics: r_metrics[m] = met.make_scorer(r_metrics[m])
-
-    dump( [args,str(regression_learners), str(classification_learners)],
-         path.join(args.outdir,'arguments.pkl.gz') )
 
 
     with h5py.File(args.data, mode='r',libver='latest') as h5f:
@@ -240,6 +243,7 @@ def main(args):
                   '\ny_frac_mask',y_frac_mask.shape,
                   'y_full',y_full.shape,
                   'x_full',x_full.shape)
+            
             if len(x_full)==0 or len(y_full)==0:
                 print('no samples to learn for alg',alg)
                 continue
@@ -261,12 +265,15 @@ def main(args):
 
             if 'features' in args:
                 # allow substring matches
-                x_attrs = [a for a in x_attrs if any(a.startswith(feature) for feature in args.features)]
-            X = x_full[x_attrs][y_frac_mask]
+                x_attrs = [a for a in x_attrs if any(a.startswith(feature) \
+                                                     for feature in args.features)]
+                X = x_full[x_attrs][y_frac_mask]
 
             y = y_full[ycount_attrs][y_frac_mask] # drop all features
 
-            sp_tree_cols = np.array([ycount_attrs[s] for s in y_full['sp_tree_ind'].astype(int)]) # get col of true sp tree; should always be the same
+            sp_tree_cols = np.array(
+                [ycount_attrs[s] for s in y_full['sp_tree_ind'].astype(int)]
+            ) # get col of true sp tree; should always be the same
 
             # print(ycount_attrs,y_full.index.shape, np.unique(sp_tree_cols),'\n',
             #       y_full[ycount_attrs].sum(1),
@@ -288,7 +295,8 @@ def main(args):
                 n_ils = len(no_ils)
                 print('using {} out of {}'.format(n_ils,len(y_frac)))
                 if n_ils > y_frac.size/2:
-                    print('not enough samples for non-overlapping binarization with ils threshold', args.ils,'; using 50-50 split')
+                    print('''not enough samples for non-overlapping 
+                    binarization with ils threshold''',args.ils,'; using 50-50 split')
                     n_ils = ind.size//2
                     no_ils = ind[-n_ils:]
                 ils = ind[:n_ils] 
@@ -304,21 +312,7 @@ def main(args):
                 ils,no_ils = np.where(y_bin), np.where(~y_bin)
                 
             np.savez(path.join(args.outdir,alg,'ybmask'), ils=ils, no_ils=no_ils)
-            
-            print('\nclassifiers....\n')
-            now = time()
-            results_c = train_and_test(X_bin,
-                                       y_bin,
-                                       classification_learners,
-                                       c_metrics,
-                                       outfile=path.join(outdir,
-                                                         'results.%s.classify'%alg),
-                                       outdir=outdir,
-                                       fold_splitter=StratifiedKFold(args.folds,shuffle=True,random_state=SEED),
-                                       nprocs=args.procs,
-                                       predict=args.predict)
-            print('time:',time()-now)
-            # compute results
+
             print('\nregressors....\n')
             now = time()
             results_r = train_and_test(X.values,
@@ -328,10 +322,31 @@ def main(args):
                                        outfile=path.join(outdir,
                                                          'results.%s.regress'%alg),
                                        outdir=outdir,
-                                       fold_splitter=KFold(args.folds,shuffle=True,random_state=SEED),
+                                       fold_splitter=KFold(args.folds,
+                                                           shuffle=True,
+                                                           random_state=SEED),
                                        nprocs=args.procs,
                                        predict=args.predict)
             print('time:',time()-now)
+            
+            if args.classify:
+                print('\nclassifiers....\n')
+                now = time()
+                results_c = train_and_test(X_bin,
+                                           y_bin,
+                                           classification_learners,
+                                           c_metrics,
+                                           outfile=path.join(outdir,
+                                                             'results.%s.classify'%alg),
+                                           outdir=outdir,
+                                           fold_splitter=StratifiedKFold(args.folds,
+                                                                         shuffle=True,
+                                                                         random_state=SEED),
+                                           nprocs=args.procs,
+                                           predict=args.predict)
+                print('time:',time()-now)
+                # compute results
+
         except  Exception as e:
 	    #raise e
             print(e)
@@ -351,6 +366,9 @@ if __name__=="__main__":
     parser.add_argument('--predict',
                         action='store_true',
                         help='write cross-val predictions to file')
+    parser.add_argument('--classify',
+                        action='store_true',
+                        help='classification+regression')
     parser.add_argument('--mintrees',
                         '-m',
                         type=int,
@@ -361,11 +379,13 @@ if __name__=="__main__":
                         help='use balanced ILS/NoILS classes; o.w. use all the data')
     parser.add_argument('--tol',
                         default=.3,
-                        help='observed frequencies must be within tol of each other (NOT USED)')
+                        help='''observed frequencies must be
+                        within tol of each other (NOT USED)''')
     parser.add_argument('--ils', 
                         default=.99,
                         type=float,
-                        help='species tree frequency must be at most this value to be considered ils.')
+                        help='''species tree frequency must 
+                        be at most this value to be considered ils.''')
     parser.add_argument('--outdir',
                         help='directory to store results files',
                         default='/N/dc2/projects/bkrosenz/deep_ils/results')
@@ -374,7 +394,8 @@ if __name__=="__main__":
                         help='input hdf5 file')
     parser.add_argument('--config',
                         '-c',
-                        help='input json config file.  All flags will overwrite command line args.')
+                        help='''input json config file.  
+                        All flags will overwrite command line args.''')
     parser.add_argument('--folds',
                         '-f',
                         type=int,
