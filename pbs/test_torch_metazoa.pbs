@@ -1,0 +1,61 @@
+#!/bin/bash
+#####  Constructed by HPC everywhere #####
+#SBATCH --mail-user=bkrosenz@iu.edu
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --cpus-per-task=10
+#SBATCH --time=0-1:0:00
+#SBATCH --mem=48gb
+#SBATCH --partition=gpu
+#SBATCH --gpus v100:1
+#SBATCH --mail-type=FAIL,BEGIN,END
+#SBATCH --job-name=ils-test
+#SBATCH --output=config-test-meta.o
+#SBATCH --error=config-test-meta.e
+
+######  Module commands #####
+
+
+
+######  Job commands go below this line #####
+cd  /N/project/phyloML/deep_ils/code
+. ~/.bashrc
+module unload python anaconda
+. activate py38
+
+CODEDIR=/N/project/phyloML/deep_ils/code
+
+# MODELDIR=/N/project/phyloML/deep_ils/results/bo_final_classify
+# python  $CODEDIR/predict_config.py \
+#         --config $MODELDIR/model.config \
+# 	--model_dir $MODELDIR \
+# 	--data_files /N/project/phyloML/deep_ils/data/metazoa/li2021/genes/summary_stats.hdf5 \
+#         --preprocessor /N/project/phyloML/deep_ils/results/train_data/nonrec/preprocessor.joblib \
+#         --classify \
+# 	--outdir $MODELDIR/metazoa_classify2/
+# --data_files `find /N/project/phyloML/deep_ils/data/metazoa/li2021/genes/summary_stats -name '*hdf5'` \
+        
+# find /N/project/phyloML/deep_ils/data/metazoa/li2021/genes/summary_stats -name '*hdf5' | parallel -j 2 python  $CODEDIR/predict_config.py \
+#         --config $MODELDIR/model.config \
+# 	--model_dir $MODELDIR \
+# 	--data_files {} \
+#         --preprocessor /N/project/phyloML/deep_ils/results/train_data/nonrec/preprocessor.joblib \
+#         --classify \
+# 	--outdir $MODELDIR/metazoa_classify/{/.}
+
+MODELDIR=/N/project/phyloML/deep_ils/results/bo_final_2
+#MODELDIR=/N/project/phyloML/deep_ils/results/bo_final_large
+
+python  $CODEDIR/predict_config.py \
+        --config $MODELDIR/model.config \
+	--model_dir $MODELDIR \
+	--data_files /N/project/phyloML/deep_ils/data/metazoa/li2021/genes/summary_stats.hdf5 \
+        --preprocessor /N/project/phyloML/deep_ils/results/train_data/nonrec/preprocessor.joblib \
+	--outdir $MODELDIR/metazoa2/
+
+# find /N/project/phyloML/deep_ils/data/metazoa/li2021/genes/summary_stats -name '*hdf5' | parallel -j 2 python  $CODEDIR/predict_config.py \
+#         --config $MODELDIR/model.config \
+# 	--model_dir $MODELDIR \
+# 	--data_files {} \
+#         --preprocessor /N/project/phyloML/deep_ils/results/train_data/nonrec/preprocessor.joblib \
+# 	--outdir $MODELDIR/metazoa/{/.}

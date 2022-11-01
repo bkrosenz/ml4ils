@@ -1,7 +1,0 @@
-npos (ILS): 0, nneg 0, nfolds: 4
-metric	mean	std
-
-----
-Random
-
-params:	{'constant': None, 'random_state': None, 'strategy': 'stratified'}

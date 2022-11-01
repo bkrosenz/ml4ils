@@ -1,0 +1,38 @@
+#!/bin/bash
+#####  Constructed by HPC everywhere #####
+#SBATCH --mail-user=bkrosenz@iu.edu
+#SBATCH --nodes=1
+#SBATCH --cpus-per-task=20
+#SBATCH --time=16:0:00
+#SBATCH --partition=general
+#SBATCH --mail-type=FAIL
+#SBATCH --job-name=aa-hetero
+#SBATCH --output=aa-hetero
+
+N=2
+. ~/.bashrc
+module unload anaconda python  
+module load gnu-parallel
+. deactivate
+. activate py38
+
+seqlen=500
+scale=0.01 # theta for seqgen
+outdir=/N/project/phyloML/data/seqgen-aa-theta$scale/infer_1_rate
+export LANG=en_US
+
+mkdir -p $outdir $outdir/trees $outdir/inferred_trees $outdir/empty_dir $outdir/seq_backups
+# also JTT
+TMPDIR=/tmp #N/project/phyloML/scratch
+
+echo started at `date`
+parallel --tmpdir $TMPDIR --shuf -j $N --timeout 200% /N/project/phyloML/deep_ils/code/simulate/simulate.top1.no_gamma.AA.sh $outdir raxml-ng $scale $seqlen {} \
+	::: `seq 10 10 150` \
+	:::  0.01 0.025 `seq 0.05 0.05 0.2` `seq 0.25 0.25 2`  `seq 2.5 0.5 15` \
+	::: 20 
+
+#parallel --tmpdir $TMPDIR -j $N --timeout 200% /N/project/phyloML/deep_ils/code/simulate/simulate.seqs-only.AA.sh $outdir raxml-ng $scale $seqlen {} \
+#	::: `seq 10 10 150` \
+#	:::  0.01 0.025 `seq 0.05 0.05 0.2` `seq 0.25 0.25 2`  `seq 2.5 0.5 15` \
+#	::: 20 
+echo finished at `date`
