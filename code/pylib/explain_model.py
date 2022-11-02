@@ -154,13 +154,7 @@ def main(args):
         plt.savefig(args.outdir/f'{test_condition}_shapley.png')
 
         plt.close()
-
-        # shap.plots.bar(shap_values, clustering=clust, clustering_cutoff=1)
-        # plt.tight_layout()
-        # plt.savefig(args.outdir/f'{test_condition}_clustering.png')
-
-        # plt.close()
-
+        
         try:
             quartiles = pd.qcut(
                 u.sigmoid(y_test).loc[samp.index],

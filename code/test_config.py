@@ -47,7 +47,7 @@ def main(args):
             index=index)
 
     if args.classify:
-        res['pred_class'] = res.preds > .5
+        res['pred_class'] = res.preds > args.threshold
 
     res.to_csv(
         args.outdir/'preds.csv.gz',
@@ -64,6 +64,12 @@ if __name__ == "__main__":
         help="path to config dict (joblib pickle)",
     )
     parser.add_argument(
+        "--threshold",
+        type=float,
+        default=.9511,
+        help="threshold for DNN-Class.  Ignored if args.classify is False.",
+    )
+    parser.add_argument(
         "--topology",
         action="store_true",
         help="predict topology",
@@ -71,13 +77,12 @@ if __name__ == "__main__":
     parser.add_argument(
         "--classify",
         action="store_true",
-        help="predict binary target (p>.999 -> 1)",
+        help="predict binary target.",
     )
     parser.add_argument(
         "--model_dir",
         help="directory of trained model",
-        type=Path,
-        default=Path("/N/project/phyloML/deep_ils/results/final_trained/"),
+        type=Path
     )
     parser.add_argument(
         "--outdir",

@@ -85,7 +85,6 @@ if __name__ == "__main__":
         "--model_dir",
         help="directory of trained model",
         type=Path,
-        default=Path("/N/project/phyloML/deep_ils/results/final_trained/"),
     )
     parser.add_argument(
         "--outdir",

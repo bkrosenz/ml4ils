@@ -1,5 +1,7 @@
 #! /bin/bash
 
+# stores scf results in the same directory as input file
+
 fn=$1
 
 iqtree -s  ${fn}.nex -nt 8 \

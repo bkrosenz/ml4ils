@@ -62,13 +62,6 @@ def parse_filename(fn: Path) -> Params:
 
 # top2tid = {'(4,(1,(2,3)));': 3, '(4,(2,(1,3)));': 2, '(4,(3,(1,2)));': 1}
 
-# clade_mapper.update({o: '1' for o in ingroup})
-
-# clade_mapper = {'Ctenophora': 'cte', 'Porifera': 'por'}
-# clade_mapper.update({o: 'out' for o in outgroup})
-# clade_mapper.update({o: 'bil_cni' for o in ingroup})
-
-
 def tree2pdist(tree: u.Tree, q) -> pd.DataFrame:
     tree = tree.copy('deepcopy')
     tree.prune(q)
@@ -78,24 +71,15 @@ def tree2pdist(tree: u.Tree, q) -> pd.DataFrame:
     d = u.summarize(tree)
     d['ix'] = q
 
-    # for taxon in q:
-    #     d[clade_mapper[taxon.split('_')[0]]] = taxon
-    # del d['newick']
     return d
 
 
 def filter_quartet_list(quartet: list) -> bool:
-    """Assumes that Outgroups have not been merged, and the list may contain more than 4 taxa"""
+    """Assumes that Outgroups have been merged, and the list doesn't contain more than 4 taxa"""
     found = 0
-    for clades in (outgroup, ingroup, ['Porifera'], ['Ctenophora']):
-        found += any(s.find(c) > -1 for s in quartet for c in clades)
+    for clade in clade_mapper.keys():
+        found += any(s.find(clade) > -1 for s in quartet )
     return found >= 4
-
-
-# clades = {
-#     k: str(v) for v, k in enumerate(
-#         ('ParaHoxozoa', 'Cten', 'Por', 'Out'))
-# }
 
 splits = {
     '2143': {'qDF1': 'qDF1', 'qCF': 'qCF', 'qDF2': 'qDF2', 'qN': 'qN'},
@@ -128,7 +112,7 @@ class SCF:
 
     @staticmethod
     def filter_quartet(quartet: list) -> bool:
-        """filters for those quartets that span the ('ParaHoxozoa', 'Out', 'Por', 'Cten') branch"""
+        """filters for those quartets that span the internal branch"""
         found = 0
         for clade in clade_mapper:
             found += sum(s.startswith(clade) for s in quartet) == 1
@@ -191,7 +175,7 @@ def write_quartets(filename: Path, threads: int = 4):
     import numpy as np
     from Bio import AlignIO
 
-    # TODO: must first translate species name -> bil_cni/out/por to reorder index columns of scf.
+    # TODO: must first translate species name -> clade name to reorder index columns of scf.
     # Then select using array_agg.
     _, prefix, gene, imodel = parse_filename(filename)
     dirname = filename.parent
@@ -221,7 +205,6 @@ def write_quartets(filename: Path, threads: int = 4):
     except:
         print(scf, filename)
         raise
-    # quartet_records = dict.fromkeys(quartet_ids.values())
     summarize_tree = partial(tree2pdist, tree)
     quartet_records = Parallel(threads)(
         delayed(summarize_tree)(q) for q in scf.index)
@@ -250,7 +233,8 @@ def write_hdf(s: Path, procs=4):
 
 def main(args):
 
-    global clade_mapper = dict(zip(args.clades), '1234')
+    global clade_mapper
+    clade_mapper = dict(zip(args.clades), '1234')
 
     csize = int(5000 / args.procs)
     # TODO check file size, keep recmap in memory
@@ -261,7 +245,6 @@ def main(args):
             start_time = time()
             done = 0
             for filename in dirname.glob('*.treefile'):
-                # done += filename.with_suffix('.quartets.pd.gz').exists(
                 done += write_quartets(filename, threads=args.threads)
             print(
                 f'dir: {dirname}\ttime: {time()-start_time}\twrote: {done}')

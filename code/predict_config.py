@@ -92,7 +92,6 @@ if __name__ == "__main__":
         "--classify",
         action="store_true",
         help="predict topology",
-        # help="binarize y (p>.999 -> 1)",
     )
     parser.add_argument(
         "--model_dir",
