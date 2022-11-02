@@ -60,22 +60,8 @@ def parse_filename(fn: Path) -> Params:
     )
 
 
-outgroup = set(['Choanoflagellida', 'Choanoflagellatea', 'Ichthyosporea', 'Filasterea',
-                'Fungi'])
-ingroup = set(['Bilateria', 'Cnidaria', 'Placozoa', ])
-outgroup_rx = re.compile('^('+')|('.join(outgroup)+')')
-ingroup_rx = re.compile('^('+')|('.join(ingroup)+')')
-
-
-def clade_name_mapper(s):
-    return outgroup_rx.sub('Outgroup', ingroup_rx.sub('ParaHoxozoa', s))
-    # return outgroup_rx.sub('Outgroup', s)
-
-
 # top2tid = {'(4,(1,(2,3)));': 3, '(4,(2,(1,3)));': 2, '(4,(3,(1,2)));': 1}
 
-clade_mapper = {'ParaHoxozoa': '1', 'Ctenophora': '2',
-                'Porifera': '3', 'Outgroup': '4'}
 # clade_mapper.update({o: '1' for o in ingroup})
 
 # clade_mapper = {'Ctenophora': 'cte', 'Porifera': 'por'}
@@ -246,10 +232,6 @@ def write_quartets(filename: Path, threads: int = 4):
     d.index = pd.MultiIndex.from_tuples(d.index, names=scf.index.names)
     d = scf.to_dataframe().join(d)
 
-    # mapper = u.pdist_mapper(tree.get_leaf_names())
-    # d = par.apply_mapping(d, mapper=mapper)
-    # d = par.summarize_chunk(d, group_cols=['tid'])
-
     d["infer_model"] = imodel
     d["seq_length"] = a.get_alignment_length()
     d["infer_engine"] = "iqtree"
@@ -261,23 +243,6 @@ def write_quartets(filename: Path, threads: int = 4):
 
 def write_hdf(s: Path, procs=4):
     from summarize_meta import summarize_dataset
-    # try:
-    #     df = pd.concat(map(pd.read_pickle, s.glob('*pd.gz')))
-    # except ValueError:
-    #     print(list(s.glob('*pd.gz')))
-    #     return
-    # df = df[['qCF', 'qDF1', 'qDF2', 'qN', 'pdist', 'tid', 'seq_length']]
-    # mapper = u.pdist_mapper(list('1234'))
-    # df = par.apply_mapping(df, mapper=mapper)
-
-    # groups = df.groupby(df.index.names)
-    # summary_stats = pd.concat(
-    #     Parallel(n_jobs=procs, prefer='threads')(
-    #         delayed(par.summarize_chunk)(g, ['tid']) for n, g in groups
-    #     )
-    # )
-
-    # summary_stats.index = groups.groups.keys()
     summary_stats = summarize_dataset(s, by='taxa')
     summary_stats.to_hdf(s.parent/'summary_stats.hdf5', key=s.stem)
     return summary_stats
@@ -285,11 +250,10 @@ def write_hdf(s: Path, procs=4):
 
 def main(args):
 
+    global clade_mapper = dict(zip(args.clades), '1234')
+
     csize = int(5000 / args.procs)
     # TODO check file size, keep recmap in memory
-    print(write_quartets(Path(
-        '/N/project/phyloML/deep_ils/data/metazoa/li2021/genes/Whelan2017_full_only_choanozoa.genes/Subset18_02_126.LG+F.treefile'),
-        args.threads))
     directories = list(args.seqdir.glob("*.genes"))
     random.shuffle(directories)
     if args.procs == 1:
@@ -350,6 +314,13 @@ if __name__ == "__main__":
         type=str,
         default="iqtree",
         help="inference engine (fasttree/raxml). Not implemented.",
+    )
+    parser.add_argument(
+        "--clades",
+        type=str,
+        nargs=4,
+        default=['ParaHoxozoa', 'Ctenophora', 'Porifera', 'Outgroup']
+        help="The 4 clade names. The clade in the final position will be considered the outgroup.",
     )
     parser.add_argument(
         "--verbose",
