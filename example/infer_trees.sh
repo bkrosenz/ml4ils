@@ -6,12 +6,12 @@ SEQDIR=../data/Ryan2013_est.genes/
 THREADS=4
 SUBPROCESSES=6
 
-find $SEQDIR -name '*.nex' | parallel --shuf -j $SUBPROCESSES iqtree2 -s {} -m LG+F -nt $THREADS --prefix {.}.LG+F
+find $SEQDIR -name '*.nex' | parallel --shuf -j $SUBPROCESSES iqtree -s {} -m LG+F -nt $THREADS --prefix {.}.LG+F
 find $SEQDIR -name '*.nex' | parallel --shuf -j $SUBPROCESSES ./compute_scf.sh {.}
  
 cd ../code/pylib
 
-python meta_to_hdf.py --csize 200 --threads 6 --procs 6 --seqdir $SEQDIR
+python meta_to_hdf.py --csize 200 --threads $THREADS --procs $SUBPROCESSES --seqdir $SEQDIR
 
 
 
