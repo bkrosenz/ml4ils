@@ -7,9 +7,9 @@ simulation parameters and summary statistics: https://docs.google.com/spreadshee
 ## Directory Structure
 
 ### Code
-All simulation scripts are in code/simulate.  ML training and plotting are in code/pylib. 
+All simulation scripts are in code/simulate.  ML training and plotting are in code/pylib. Pretrained models and model configurations are in models/.
 
-Miscellaneous scripts for running the pipeline are in code/shell_scripts/ and pbs/ (NOTE: these contain numerous hard-coded paths and IU HPC-specific programs.)
+Miscellaneous scripts for running the pipeline are in code/shell_scripts/ and pbs/ (NOTE: these may contain hard-coded paths.)
 
 ### Training Data
 All simulations (parameters, gene trees, inferred trees) are stored in a PostGreSQL database.  The summary statististics for the subsets of the database used for training/testing are found in data/simulated/.
@@ -20,6 +20,9 @@ Dataset configuration, model parameters, raw predictions, and performance graphs
 ## Dependencies and Instructions for Running Code
 
 Python 3.6+.  Required python packages are listed in the code/conda-env.yml file.
+
+### User Guide
+The wiki page of this repository contains a complete soup-to-nuts walkthrough example of the inference pipeline.
 
 ## TODO List
 see https://docs.google.com/spreadsheets/d/1ltwQcEvl_9chGwFglrYC9aERxm0iX5q_MHn_L4LAICY/edit#gid=1386834576
