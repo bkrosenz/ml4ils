@@ -22,7 +22,7 @@ Dataset configuration, model parameters, raw predictions, and performance graphs
 Python 3.6+.  Required python packages are listed in the code/conda-env.yml file.
 
 ### User Guide
-The wiki page of this repository contains a complete soup-to-nuts walkthrough example of the inference pipeline.
+The wiki page of this repository (https://github.com/bkrosenz/ml4ils/wiki) contains a complete soup-to-nuts walkthrough example of the inference pipeline.
 
 ## TODO List
 see https://docs.google.com/spreadsheets/d/1ltwQcEvl_9chGwFglrYC9aERxm0iX5q_MHn_L4LAICY/edit#gid=1386834576
