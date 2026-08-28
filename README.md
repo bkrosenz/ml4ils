@@ -22,5 +22,14 @@ Dataset configuration, model parameters, raw predictions, and performance graphs
 
 Python 3.6+.  Required python packages are listed in the code/conda-env.yml file.
 
+The reusable APIs are also available as an installable package. From the repository
+root, install the package and its scientific dependencies with:
+
+	python -m pip install -e ".[scientific,test]"
+
+Existing scripts under code/ remain supported. For example, model utilities can be
+imported from `ml4ils.models`; the legacy `code/pylib/models.py` import path is
+retained as a compatibility wrapper.
+
 ### User Guide
 The wiki page of this repository (https://github.com/bkrosenz/ml4ils/wiki) contains a complete soup-to-nuts walkthrough example of the inference pipeline.

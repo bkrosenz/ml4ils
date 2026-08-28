@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ml4ils"
+version = "0.1.0"
+description = "Machine-learning methods to detect incomplete lineage sorting"
+readme = "README.md"
+requires-python = ">=3.9"
+
+[project.optional-dependencies]
+scientific = [
+    "numpy>=1.20",
+    "pandas>=1.4",
+    "scikit-learn>=1.0",
+    "scipy>=1.7",
+    "torch>=1.10",
+]
+test = ["pytest>=7"]
+
+[tool.setuptools.packages.find]
+include = ["ml4ils*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
