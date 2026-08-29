@@ -16,9 +16,9 @@ def calculate_f1(
     log_proba: torch.Tensor,
     target: torch.Tensor,
     pos: int = 0,
-    thresh: float = 2.0 / 3,
+    thresh: float = 0.5,
 ) -> torch.Tensor:
-    """Compute the F1 score for a positive class, supporting probability and logits inputs."""
+    """Compute the F1 score for a positive class over binary or multiclass predictions."""
     if log_proba.ndim > 1:
         preds = log_proba.argmax(dim=1)
     else:
@@ -34,10 +34,17 @@ def calculate_f1(
 
 
 def calculate_mcc(
-    log_proba: torch.Tensor, target: torch.Tensor, pos: int = 0
+    log_proba: torch.Tensor,
+    target: torch.Tensor,
+    pos: int = 0,
+    thresh: float = 0.5,
 ) -> torch.Tensor:
     """Compute the Matthews correlation coefficient from a confusion matrix."""
-    preds = log_proba.argmax(dim=1).reshape_as(target)
+    if log_proba.ndim > 1:
+        preds = log_proba.argmax(dim=1)
+    else:
+        preds = torch.sigmoid(log_proba) > thresh
+    preds = preds.reshape_as(target)
     target = target.reshape_as(preds)
     y_pred_pos = preds == pos
     y_true_pos = target == pos
@@ -45,15 +52,19 @@ def calculate_mcc(
     fp = torch.logical_and(y_pred_pos, ~y_true_pos).sum().float()
     fn = torch.logical_and(~y_pred_pos, y_true_pos).sum().float()
     tn = torch.logical_and(~y_pred_pos, ~y_true_pos).sum().float()
-    denominator = torch.sqrt((tp + fp) * (tp + fn) * (tn + fp) * (tn + fn))
-    if denominator == 0:
+    denom = torch.sqrt((tp + fp) * (tp + fn) * (tn + fp) * (tn + fn))
+    if denom == 0:
         return torch.tensor(0.0, device=target.device)
-    return (tp * tn - fp * fn) / denominator
+    return (tp * tn - fp * fn) / denom
 
 
 def calculate_accuracy(log_proba: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
     """Calculate classification accuracy from the predicted class indices."""
-    return torch.mean((log_proba.argmax(dim=1) == target).float())
+    if log_proba.ndim > 1:
+        preds = log_proba.argmax(dim=1)
+    else:
+        preds = torch.sigmoid(log_proba) > 0.5
+    return torch.mean((preds.reshape_as(target) == target).float())
 
 
 class Net(nn.Sequential):
