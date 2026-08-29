@@ -1,6 +1,9 @@
 """PyTorch models and metrics used by the ML4ILS workflows."""
 
+from __future__ import annotations
+
 from pathlib import Path
+from typing import Iterable, Optional
 
 import torch
 import torch.nn as nn
@@ -14,51 +17,79 @@ def calculate_f1(
     target: torch.Tensor,
     pos: int = 0,
     thresh: float = 2.0 / 3,
-):
-    """Calculate the F1 score for the selected positive class."""
-    if len(log_proba.shape) > 1:
-        preds = log_proba.argmax(1)
+) -> torch.Tensor:
+    """Compute the F1 score for a positive class, supporting probability and logits inputs."""
+    if log_proba.ndim > 1:
+        preds = log_proba.argmax(dim=1)
     else:
         preds = torch.sigmoid(log_proba) > thresh
-    tp = torch.logical_and(preds == pos, target == pos).sum()
-    fp = torch.logical_and(preds == pos, target != pos).sum()
-    fn = torch.logical_and(preds != pos, target == pos).sum()
-    return tp / (tp + (fp + fn).float() / 2)
+    preds = preds.reshape_as(target)
+    tp = torch.logical_and(preds == pos, target == pos).sum().float()
+    fp = torch.logical_and(preds == pos, target != pos).sum().float()
+    fn = torch.logical_and(preds != pos, target == pos).sum().float()
+    denom = tp + (fp + fn) / 2.0
+    if denom == 0:
+        return torch.tensor(0.0, device=target.device)
+    return tp / denom
 
 
-def calculate_mcc(log_proba, target, pos=0):
-    """Calculate the Matthews correlation coefficient."""
-    preds = log_proba.argmax(1)
-    tp = torch.logical_and(preds == pos, target == pos).sum()
-    fp = torch.logical_and(preds == pos, target != pos).sum()
-    fn = torch.logical_and(preds != pos, target == pos).sum()
-    tn = torch.logical_and(preds != pos, target == preds).sum()
-    return (tp * tn - fp * fn) / (
-        (tp + fp) * (tp + fn) * (tn + fp) * (tn + fn).float() / 2
-    )
+def calculate_mcc(
+    log_proba: torch.Tensor, target: torch.Tensor, pos: int = 0
+) -> torch.Tensor:
+    """Compute the Matthews correlation coefficient from a confusion matrix."""
+    preds = log_proba.argmax(dim=1).reshape_as(target)
+    target = target.reshape_as(preds)
+    y_pred_pos = preds == pos
+    y_true_pos = target == pos
+    tp = torch.logical_and(y_pred_pos, y_true_pos).sum().float()
+    fp = torch.logical_and(y_pred_pos, ~y_true_pos).sum().float()
+    fn = torch.logical_and(~y_pred_pos, y_true_pos).sum().float()
+    tn = torch.logical_and(~y_pred_pos, ~y_true_pos).sum().float()
+    denominator = torch.sqrt((tp + fp) * (tp + fn) * (tn + fp) * (tn + fn))
+    if denominator == 0:
+        return torch.tensor(0.0, device=target.device)
+    return (tp * tn - fp * fn) / denominator
 
 
-def calculate_accuracy(log_proba, target):
-    """Calculate classification accuracy from log probabilities."""
-    return torch.mean((log_proba.argmax(1) == target).float())
+def calculate_accuracy(log_proba: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+    """Calculate classification accuracy from the predicted class indices."""
+    return torch.mean((log_proba.argmax(dim=1) == target).float())
 
 
 class Net(nn.Sequential):
     """Feed-forward network used by the training and prediction scripts."""
 
-    def __init__(self, input_size: int, layer_sizes=None, dropout: float = 0.1):
+    def __init__(
+        self,
+        input_size: int,
+        layer_sizes: Optional[Iterable[int]] = None,
+        dropout: float = 0.1,
+    ) -> None:
+        """Construct a feed-forward network from input width and per-layer widths."""
         if layer_sizes is None:
             layer_sizes = [120, 849, 1]
-        layers = [nn.Linear(input_size, layer_sizes[0]), nn.ReLU()]
-        for input_size, output_size in zip(layer_sizes[:-2], layer_sizes[1:-1]):
+        layer_sizes = list(layer_sizes)
+        if not layer_sizes:
+            raise ValueError("layer_sizes must contain at least one output width")
+
+        layers: list[nn.Module] = []
+        current_size = input_size
+        for hidden_size in layer_sizes[:-1]:
             layers.extend(
-                [nn.Dropout(p=dropout), nn.Linear(input_size, output_size), nn.ReLU()]
+                [
+                    nn.Linear(current_size, hidden_size),
+                    nn.ReLU(),
+                ]
             )
-        layers.append(nn.Linear(output_size, layer_sizes[-1]))
-        if layer_sizes[-1] > 1:
+            current_size = hidden_size
+
+        final_size = layer_sizes[-1]
+        layers.append(nn.Linear(current_size, final_size))
+        if final_size > 1:
             layers.append(nn.LogSoftmax(dim=1))
-        elif layer_sizes[-1] == 1:
+        elif final_size == 1:
             layers.append(nn.Sigmoid())
+
         super().__init__(*layers)
         self.device = get_device()
         self.to(self.device)
@@ -83,13 +114,14 @@ def get_device():
 def load_model(
     config: dict,
     dataset,
-    checkpoint_dir: Path = None,
+    checkpoint_dir: Path | None = None,
     with_optimizer: bool = False,
     optimizer=optim.Adam,
 ):
-    """Load a network and optionally its optimizer state."""
+    """Load a network and optionally restore optimizer state from a checkpoint."""
     n_features = dataset if isinstance(dataset, int) else dataset[0][0].shape[0]
     net = instantiate_model(n_features, config["layers"])
+    opt = None
     if with_optimizer:
         opt = optimizer(net.parameters(), lr=config["lr"])
     if checkpoint_dir:
@@ -99,6 +131,8 @@ def load_model(
                 checkpoint_path, map_location=net.device
             )
             net.load_state_dict(model_state)
+            if with_optimizer and optimizer_state is not None:
+                opt.load_state_dict(optimizer_state)
             print("loaded model state")
     if with_optimizer:
         return net, opt

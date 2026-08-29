@@ -8,7 +8,19 @@ def test_package_metadata():
 
     assert ml4ils.__version__ == "0.1.0"
 
-    
+
+def test_classification_metrics_are_stable_for_binary_labels():
+    import torch
+
+    from ml4ils.models import calculate_f1, calculate_mcc
+
+    logits = torch.tensor([2.0, -1.0, 0.5, -0.5])
+    target = torch.tensor([1, 0, 1, 0])
+
+    assert torch.isclose(calculate_f1(logits, target, pos=1), torch.tensor(0.6666667))
+    assert torch.isclose(calculate_mcc(logits, target, pos=1), torch.tensor(0.3333333))
+
+
 def test_legacy_adapters_are_lazy():
     import importlib
     import sys
