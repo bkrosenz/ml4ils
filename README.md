@@ -1,35 +1,152 @@
 # ml4ils
-## Description
-A collection of Machine Learning benchmarks for analyzing Incomplete Lineage Sorting in genomic datasets.
 
-## Directory Structure
+Machine Learning methods to detect Incomplete Lineage Sorting (ILS) in phylogenomic datasets.
 
-### Code
-All simulation scripts are in code/simulate.  ML training and plotting are in code/pylib. Pretrained models and model configurations are in models/.
+## Quick Start
 
-Miscellaneous scripts for running the pipeline are in code/shell_scripts/ and pbs/ (NOTE: these may contain hard-coded paths.)
+### Installation
 
-### Training Data
-Training data was simulated with \verb+ms+ and \verb+seq-gen+, and gene trees inferred with \verb+RaXML+ and \verb+IQTREE+.  Simulation parameters and summary statistics are described in the paper.  All simulations (parameters, gene trees, inferred trees) are stored in a PostGreSQL database.  Scripts for generating data, reading from the database, and computing summary statistics are included in this repository.
+This repository provides both a production Python package and backward-compatible scripts.
 
-Example summary statistics files for training/testing are found in \verb+data/simulated/+.  Complete simulated training files are available on data dryad at doi:10.5061/dryad.1ns1rn8xx.
+#### Package Installation (Recommended)
 
+From the repository root, install the package with all scientific dependencies:
 
-### Results
-Dataset configuration, model parameters, raw predictions, and performance graphs are in the results/ directory.
+```bash
+pip install -e ".[scientific,test]"
+```
 
-## Dependencies and Instructions for Running Code
+This requires **Python 3.9+** and installs dependencies for:
+- **scientific**: Core ML workflow (numpy, pandas, scikit-learn, scipy, torch)
+- **test**: Testing framework (pytest)
 
-Python 3.6+.  Required python packages are listed in the code/conda-env.yml file.
+#### Legacy Script Setup
 
-The reusable APIs are also available as an installable package. From the repository
-root, install the package and its scientific dependencies with:
+To use existing shell scripts and code under `code/`, install dependencies with:
 
-	python -m pip install -e ".[scientific,test]"
+```bash
+conda env create -f code/conda-env.yml
+conda activate ml4ils
+```
 
-Existing scripts under code/ remain supported. For example, model utilities can be
-imported from `ml4ils.models`; the legacy `code/pylib/models.py` import path is
-retained as a compatibility wrapper.
+### Basic Usage
 
-### User Guide
-The wiki page of this repository (https://github.com/bkrosenz/ml4ils/wiki) contains a complete soup-to-nuts walkthrough example of the inference pipeline.
+#### Using the Package API
+
+```python
+from ml4ils.models import Net, calculate_f1, calculate_mcc
+from ml4ils.meta_to_hdf import MetaHDFBuilder
+import torch
+
+# Define and use a neural network model
+model = Net(input_size=50, hidden_layers=[128, 64])
+logits = model(torch.randn(10, 50))
+
+# Compute metrics
+f1 = calculate_f1(logits, target_labels, pos=1)
+mcc = calculate_mcc(logits, target_labels, pos=1)
+```
+
+#### Using Legacy Scripts
+
+```bash
+python code/test_config.py \
+    --config models/DNN-Pred/model.config \
+    --model_dir models/DNN-Pred \
+    --data_files data/summary_stats.hdf5 \
+    --classify --threshold 0.95
+```
+
+See the [example/](example/) directory for complete end-to-end workflows.
+
+## Documentation
+
+- **[INSTALL.md](INSTALL.md)** — Detailed installation, environment setup, and troubleshooting
+- **[API.md](API.md)** — Reference for public package modules and functions
+- **[DEVELOPMENT.md](DEVELOPMENT.md)** — Contributing guidelines, testing, and development workflow
+- **[Wiki](https://github.com/bkrosenz/ml4ils/wiki)** — User guide and soup-to-nuts inference pipeline example
+
+## Repository Structure
+
+```
+ml4ils/                      # Production Python package (v0.1.0)
+├── models.py               # PyTorch models and metrics
+├── meta_to_hdf.py          # HDF5 dataset builder
+├── sql_utils.py            # Database utilities
+├── utils.py                # Common utilities
+├── stat_utils.py           # Statistical functions
+├── plotting/               # Visualization modules
+└── [other modules]         # Analysis and prediction utilities
+
+code/
+├── pylib/                  # Legacy Python utilities (backward compatible)
+├── shell_scripts/          # Pipeline orchestration (may have hardcoded paths)
+├── plotting/               # Legacy plotting scripts
+└── simulate/               # Simulation pipelines
+
+models/                      # Pretrained model files and configs
+├── DNN-Pred/               # Classification models
+└── DNN-Top/                # Topology prediction models
+
+data/                        # Example and training datasets
+├── Ryan2013_est.genes/     # Real gene trees (example)
+└── simulated/              # Generated training/test data
+
+results/                     # Output directory for predictions and analysis
+tests/                       # Automated test suite
+```
+
+## Key Features
+
+### Model APIs
+
+- **`ml4ils.models.Net`**: Flexible PyTorch neural network for sequence data
+- **`ml4ils.models.calculate_f1`**: F1-score metric (handles multi-class and binary)
+- **`ml4ils.models.calculate_mcc`**: Matthews correlation coefficient
+
+### Data Processing
+
+- **`ml4ils.meta_to_hdf.MetaHDFBuilder`**: Converts raw sequence and tree data to HDF5 format
+- **`ml4ils.sql_utils`**: PostgreSQL database queries for simulation parameters and results
+- **`ml4ils.stat_utils`**: Summary statistics computation (SCF, gene tree metrics, etc.)
+
+### Backward Compatibility
+
+Legacy imports from `code/pylib/` are supported via lazy compatibility wrappers:
+
+```python
+# Both work identically (new package path preferred)
+from ml4ils.models import Net
+import sys; sys.path.insert(0, 'code/pylib'); from models import Net
+```
+
+## Training Data
+
+Training simulations were generated using **ms**, **seq-gen**, and phylogenetic inference tools (**RaXML**, **IQTREE**).
+
+- Simulation parameters, gene trees, and inferred trees are stored in a PostgreSQL database
+- Summary statistics for training/testing: [data/simulated/](data/simulated/)
+- Complete simulated datasets: [Dryad doi:10.5061/dryad.1ns1rn8xx](https://doi.org/10.5061/dryad.1ns1rn8xx)
+
+## Requirements & Compatibility
+
+- **Python**: 3.9+
+- **Core dependencies**: numpy, pandas, scikit-learn, scipy, torch
+- **Database** (optional): PostgreSQL with simulation metadata
+- **Phylogenetics tools** (optional for data generation): RaXML, IQTREE, ms, seq-gen
+
+## Testing
+
+Run the test suite to validate package installation and APIs:
+
+```bash
+pytest tests/
+```
+
+## Contributing
+
+See [DEVELOPMENT.md](DEVELOPMENT.md) for guidelines on reporting issues, submitting contributions, and running the full test suite.
+
+## Citation & References
+
+See the project repository wiki and associated publications for methodological details.

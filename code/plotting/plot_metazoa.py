@@ -43,7 +43,7 @@ def grouped_shap(shap_values, features, groups):
     return shap_grouped
 
 
-def plot_gene_counts(dd):
+def plot_gene_counts(df):
     c = pd.DataFrame(
         {'Number of Genes': df.counts.sum(1), 'Data Matrix': df.matrix})
     sns.displot(data=c.reset_index(), hue='Data Matrix',
